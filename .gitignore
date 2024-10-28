@@ -20,6 +20,7 @@ local.sbt
 
 # VS Code
 .vscode/
+*.code-workspace
 
 # Metals
 .bloop/
