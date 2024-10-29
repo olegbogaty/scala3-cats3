@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - "./sql:/docker-entrypoint-initdb.d"
+    environment:
+      - "POSTGRES_USER=oradian"
+      - "POSTGRES_PASSWORD=oradian"
+    ports:
+      - "5454:5432"
