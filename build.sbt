@@ -8,5 +8,8 @@ lazy val root = project
 
     scalaVersion := scala3Version,
 
-    libraryDependencies += "org.scalameta" %% "munit" % "1.0.0" % Test
+    libraryDependencies += "org.scalameta" %% "munit" % "1.0.0" % Test,
+    libraryDependencies += "is.cir" %% "ciris" % "3.6.0",
+    libraryDependencies += "is.cir" %% "ciris-refined" % "3.6.0",
+    libraryDependencies += "org.typelevel" %% "cats-effect" % "3.5.5"
   )
