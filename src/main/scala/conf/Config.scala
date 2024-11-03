@@ -7,6 +7,7 @@ import ciris.*
 import ciris.refined.*
 import eu.timepit.refined.*
 import eu.timepit.refined.api.*
+import eu.timepit.refined.auto.*
 import eu.timepit.refined.types.all.*
 import eu.timepit.refined.types.net.UserPortNumber
 import eu.timepit.refined.types.string.NonEmptyString
@@ -42,7 +43,7 @@ final case class AppConfig(
 private def dbConfig[F[_]]: ConfigValue[F, DbConfig] =
   (
     env("DATABASE_HOST").as[NonEmptyString].default("localhost"),
-    env("DATABASE_PORT").as[UserPortNumber].default(8080),
+    env("DATABASE_PORT").as[UserPortNumber].default(5454),
     env("DATABASE_USER").as[NonEmptyString].default("oradian"),
     env("DATABASE_PASS").as[NonEmptyString].default("oradian")
   ).parMapN(DbConfig.apply)
