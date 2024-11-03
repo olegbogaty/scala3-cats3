@@ -9,5 +9,6 @@ services:
     environment:
       - "POSTGRES_USER=oradian"
       - "POSTGRES_PASSWORD=oradian"
+      - "POSTGRES_DB=oradian"
     ports:
       - "5454:5432"
