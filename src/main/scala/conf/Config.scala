@@ -27,7 +27,8 @@ final case class DbConfig(
   host: NonEmptyString,
   port: UserPortNumber,
   user: NonEmptyString,
-  pass: NonEmptyString
+  pass: NonEmptyString,
+  base: NonEmptyString
 )
 
 final case class TransferConfig(
@@ -45,7 +46,8 @@ private def dbConfig[F[_]]: ConfigValue[F, DbConfig] =
     env("DATABASE_HOST").as[NonEmptyString].default("localhost"),
     env("DATABASE_PORT").as[UserPortNumber].default(5454),
     env("DATABASE_USER").as[NonEmptyString].default("oradian"),
-    env("DATABASE_PASS").as[NonEmptyString].default("oradian")
+    env("DATABASE_PASS").as[NonEmptyString].default("oradian"),
+    env("DATABASE_BASE").as[NonEmptyString].default("oradian")
   ).parMapN(DbConfig.apply)
 
 private def transferConfig[F[_]]: ConfigValue[F, TransferConfig] =
