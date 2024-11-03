@@ -64,7 +64,7 @@ object AccountsRepo:
 
 end AccountsRepo
 
-object Main extends IOApp:
+object AccountRepoMain extends IOApp:
   val session: Resource[IO, Session[IO]] =
     Session.single( // (2)
       host = "localhost",

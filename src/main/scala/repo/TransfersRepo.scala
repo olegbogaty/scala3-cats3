@@ -80,7 +80,7 @@ object TransfersRepo:
         session.execute(deleteOne)(transfer.transactionReference).void
 
 
-object Main2 extends IOApp:
+object TransfersRepoMain extends IOApp:
   val session2: Resource[IO, Session[IO]] =
     Session.single( // (2)
       host = "localhost",
