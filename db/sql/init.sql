@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     account_id INT UNIQUE NOT NULL,
     bank_code INT NOT NULL,
-    balance NUMERIC(18, 2) DEFAULT 0
+    balance NUMERIC DEFAULT 0
 );
 
 INSERT INTO accounts (
@@ -22,13 +22,13 @@ INSERT INTO accounts (
 CREATE TABLE IF NOT EXISTS transfers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     account_id INT NOT NULL,
-    amount NUMERIC(18, 2) NOT NULL,
-    status VARCHAR(9) NOT NULL,
+    amount NUMERIC NOT NULL,
+    status VARCHAR NOT NULL,
     recipient_account INT NOT NULL,
     recipient_bank_code INT NOT NULL,
     transaction_reference VARCHAR UNIQUE NOT NULL,
     transfer_date TIMESTAMP NOT NULL DEFAULT now (),
-    CHECK(status in ('STARTED','RUNNING','COMPLETED','FAILED'))
+    CHECK(status in ('STARTED','RUNNING','SUCCESS','FAILURE'))
 );
 
 INSERT INTO transfers (
