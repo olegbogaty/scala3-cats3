@@ -9,12 +9,11 @@ import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
 
-trait AccountsRepo[F[_]] {
+trait AccountsRepo[F[_]]:
   def insert(account: Account): F[Unit]
-  def lookup(account: Account): F[Option[Account]]
+  def select(account: Account): F[Option[Account]]
   def update(account: Account): F[Unit]
   def delete(account: Account): F[Unit]
-}
 
 object AccountsRepo:
   private val insertOne: Command[Account] =
@@ -27,16 +26,16 @@ object AccountsRepo:
       """.command
       .to[Account]
 
-  private val lookupOne: Query[Int, Account] =
+  private val selectOne: Query[Int, Account] =
     sql"""
       SELECT account_id, bank_code, balance
       FROM   accounts
       WHERE  account_id = $int4
       """
-      .query(int4 *: int4 *: numeric(18, 2))
+      .query(int4 *: int4 *: numeric)
       .to[Account]
 
-  private val updateOne =
+  private val updateOne: Command[(BigDecimal, Int)] =
     sql"""
       UPDATE accounts
       SET    balance = $numeric
@@ -53,10 +52,13 @@ object AccountsRepo:
     new AccountsRepo[F]:
       override def insert(account: Account): F[Unit] =
         session.execute(insertOne)(account).void
-      override def lookup(account: Account): F[Option[Account]] =
-        session.option(lookupOne)(account.accountId)
+
+      override def select(account: Account): F[Option[Account]] =
+        session.option(selectOne)(account.accountId)
+
       override def update(account: Account): F[Unit] =
         session.execute(updateOne)(account.balance, account.accountId).void
+
       override def delete(account: Account): F[Unit] =
         session.execute(deleteOne)(account.accountId).void
 
@@ -80,9 +82,9 @@ object Main extends IOApp:
         for
           _      <- repo.delete(account)
           _      <- repo.insert(account)
-          option <- repo.lookup(account)
+          option <- repo.select(account)
           _      <- IO.println(option)
           _      <- repo.update(account.copy(balance = account.balance - 50))
-          option <- repo.lookup(account)
+          option <- repo.select(account)
           _      <- IO.println(option)
         yield ExitCode.Success
