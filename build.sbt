@@ -13,6 +13,9 @@ lazy val root = project
     libraryDependencies += "is.cir" %% "ciris-refined" % "3.6.0",
     libraryDependencies += "org.tpolecat" %% "skunk-core" % "0.6.4",
     libraryDependencies += "org.typelevel" %% "cats-effect" % "3.5.5",
-    libraryDependencies += "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.11.7"
+    libraryDependencies += "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.11.7",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.8",
+    // http
+    
 //    libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.17.7"
   )
