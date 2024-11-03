@@ -1,6 +1,6 @@
 package apis
 
-import apis.model.{TransferRequest, TransferResponse}
+import apis.model.{TransferError, TransferRequest, TransferResponse}
 import cats.effect.{ExitCode, IO, IOApp}
 import io.circe.generic.auto.*
 import sttp.tapir.generic.auto.*
@@ -10,9 +10,11 @@ import sttp.tapir.server.netty.cats.NettyCatsServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.*
 
+import scala.util.Random
+
 object EnterTransferEndpoint:
   val enterTransfer
-    : PublicEndpoint[TransferRequest, Unit, TransferResponse, Any] =
+    : PublicEndpoint[TransferRequest, TransferError, TransferResponse, Any] =
     endpoint.post
       .in("enter-transfer")
       .in(jsonBody[TransferRequest].example {
@@ -25,11 +27,12 @@ object EnterTransferEndpoint:
         )
       })
       .out(jsonBody[TransferResponse])
+      .errorOut(jsonBody[TransferError])
 
-  val apiEndpoint: ServerEndpoint[Any, IO] =
-    enterTransfer.serverLogicSuccess(request =>
-      IO.pure(TransferResponse("yep"))
-    )
+  val apiEndpoint =
+    enterTransfer.serverLogic(request => IO {
+      Either.cond(Random.nextBoolean, TransferResponse("ok"), TransferError("insufficient balance"))
+    })
 
   val docEndpoint: List[ServerEndpoint[Any, IO]] = SwaggerInterpreter()
     .fromServerEndpoints[IO](List(apiEndpoint), "docs", "1.0.0")
