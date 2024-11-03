@@ -9,7 +9,7 @@ INSERT INTO accounts (
     account_id,
     bank_code,
   	balance
-) values (
+) VALUES (
     1111,
     2222,
     1000
@@ -38,7 +38,7 @@ INSERT INTO transfers (
   	recipient_account,
   	recipient_bank_code,
   	transaction_reference
-) values (
+) VALUES (
     1111,
     500,
     'STARTED',
