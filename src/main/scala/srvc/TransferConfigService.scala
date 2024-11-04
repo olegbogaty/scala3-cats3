@@ -11,7 +11,7 @@ trait TransferConfigService[F[_]] {
   def get: F[TransferConfig]
 }
 
-object TransferConfigService extends IOApp:
+object TransferConfigService:
   def make[F[_] : Sync](init: TransferConfig): F[TransferConfigService[F]] =
     for
       config <- Ref[F].of(init)
@@ -31,6 +31,10 @@ object TransferConfigService extends IOApp:
 
   def makeResource[F[_]: Sync](init: Ref[F, TransferConfig]): Resource[F, TransferConfigService[F]] =
     Resource.eval(make(init))
+
+
+object TransferConfigServiceMain extends IOApp:
+  import TransferConfigService.*
 
   import scala.concurrent.duration.*
   val newConfig = TransferConfig(
