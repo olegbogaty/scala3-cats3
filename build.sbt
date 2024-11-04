@@ -1,6 +1,9 @@
+import sbt.Keys.libraryDependencies
+
 val scala3Version = "3.5.2"
 
 lazy val tapirVersion = "1.11.7"
+resolvers += "jitpack" at "https://jitpack.io"
 
 lazy val root = project
   .in(file("."))
@@ -26,6 +29,7 @@ lazy val root = project
       "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % tapirVersion % Test,
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
       "com.softwaremill.sttp.client3" %% "circe" % "3.9.8" % Test
-    )
+    ),
+    libraryDependencies += "com.github.suprnation.cats-actors" %% "cats-actors" % "2.0.0-RC5"
 //    libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.17.7"
   )
