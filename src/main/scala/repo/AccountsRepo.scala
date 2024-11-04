@@ -48,19 +48,23 @@ object AccountsRepo:
       WHERE account_id = $int4
     """.command
 
-  def make[F[_]: Monad](session: Session[F]): AccountsRepo[F] =
-    new AccountsRepo[F]:
-      override def insert(account: Account): F[Unit] =
-        session.execute(insertOne)(account).void
+  def make[F[_]: Sync](session: Session[F]): F[AccountsRepo[F]] =
+    Sync[F].delay(new AccountsRepo[F]:
+        override def insert(account: Account): F[Unit] =
+          session.execute(insertOne)(account).void
 
-      override def select(account: Account): F[Option[Account]] =
-        session.option(selectOne)(account.accountId)
+        override def select(account: Account): F[Option[Account]] =
+          session.option(selectOne)(account.accountId)
 
-      override def update(account: Account): F[Unit] =
-        session.execute(updateOne)(account.balance, account.accountId).void
+        override def update(account: Account): F[Unit] =
+          session.execute(updateOne)(account.balance, account.accountId).void
 
-      override def delete(account: Account): F[Unit] =
-        session.execute(deleteOne)(account.accountId).void
+        override def delete(account: Account): F[Unit] =
+          session.execute(deleteOne)(account.accountId).void
+      )
+
+  def makeResource[F[_]: Sync](session: Session[F]): Resource[F, AccountsRepo[F]] =
+    Resource.eval(make(session))
 
 end AccountsRepo
 
@@ -77,7 +81,7 @@ object AccountRepoMain extends IOApp:
   def run(args: List[String]): IO[ExitCode] =
     val account = Account(123, 321, BigDecimal(100.25))
     session
-      .map(AccountsRepo.make[IO](_))
+      .flatMap(AccountsRepo.makeResource[IO](_))
       .use: repo => // (3)
         for
           _      <- repo.delete(account)

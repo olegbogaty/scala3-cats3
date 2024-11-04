@@ -1,6 +1,5 @@
 package repo
 
-import cats.Monad
 import cats.effect.*
 import cats.syntax.all.*
 import data.domain.Transfer
@@ -12,7 +11,6 @@ import skunk.codec.all.*
 import skunk.implicits.*
 
 import java.time.LocalDateTime
-
 
 trait TransfersRepo[F[_]] {
   def insert(transfer: Transfer): F[Unit]
@@ -65,20 +63,26 @@ object TransfersRepo:
       WHERE transaction_reference = $varchar
     """.command
 
-  def make[F[_] : Monad](session: Session[F]): TransfersRepo[F] =
-    new TransfersRepo[F]:
-      override def insert(transfer: Transfer): F[Unit] =
-        session.execute(insertOne)(transfer).void
+  def make[F[_]: Sync](session: Session[F]): F[TransfersRepo[F]] =
+    Sync[F].delay(
+      new TransfersRepo[F]:
+        override def insert(transfer: Transfer): F[Unit] =
+          session.execute(insertOne)(transfer).void
 
-      override def select(transfer: Transfer): F[Option[Transfer]] =
-        session.option(selectOne)(transfer.transactionReference)
+        override def select(transfer: Transfer): F[Option[Transfer]] =
+          session.option(selectOne)(transfer.transactionReference)
 
-      override def update(transfer: Transfer): F[Unit] =
-        session.execute(updateOne)(transfer.status, transfer.transactionReference).void
+        override def update(transfer: Transfer): F[Unit] =
+          session
+            .execute(updateOne)(transfer.status, transfer.transactionReference)
+            .void
 
-      override def delete(transfer: Transfer): F[Unit] =
-        session.execute(deleteOne)(transfer.transactionReference).void
+        override def delete(transfer: Transfer): F[Unit] =
+          session.execute(deleteOne)(transfer.transactionReference).void
+    )
 
+  def makeResource[F[_]: Sync](session: Session[F]): Resource[F, TransfersRepo[F]] =
+    Resource.eval(make(session))
 
 object TransfersRepoMain extends IOApp:
   val session2: Resource[IO, Session[IO]] =
@@ -91,9 +95,17 @@ object TransfersRepoMain extends IOApp:
     )
 
   def run(args: List[String]): IO[ExitCode] =
-    val transfer = Transfer(1,  BigDecimal(100.25), Transfer.Status.RUNNING, 2, 3, "ref", LocalDateTime.now)
+    val transfer = Transfer(
+      1,
+      BigDecimal(100.25),
+      Transfer.Status.RUNNING,
+      2,
+      3,
+      "ref",
+      LocalDateTime.now
+    )
     session2
-      .map(TransfersRepo.make[IO](_))
+      .flatMap(TransfersRepo.makeResource[IO](_))
       .use: repo => // (3)
         for
           _      <- repo.delete(transfer)
