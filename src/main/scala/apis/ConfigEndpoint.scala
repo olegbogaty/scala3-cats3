@@ -1,9 +1,9 @@
 package apis
 
 import apis.model.{ConfigError, ConfigRequest, ConfigResponse}
-import cats.{Functor, Monad}
 import cats.effect.kernel.Resource
 import cats.effect.{Async, ExitCode, IO, IOApp}
+import cats.{Functor, Monad}
 import conf.{TransferConfig, config}
 import http.HttpServer
 import io.circe.generic.auto.*
@@ -31,7 +31,6 @@ object ConfigEndpoint:
       .errorOut(jsonBody[ConfigError])
 
   import cats.data.ValidatedNel
-  import cats.instances.all.*
   import cats.syntax.all.*
   private def validateRequest[F[_]: Monad](
     request: ConfigRequest
@@ -94,7 +93,7 @@ object ConfigEndpoint:
   def makeResource[F[_]: Async](
     service: TransferConfigService[F]
   ): Resource[F, List[ServerEndpoint[Any, F]]] =
-    Resource.pure(configTransferLogic(service).pure[List])
+    Resource.eval(make(service))
 
 object ConfigEndpointMain extends IOApp: // TODO remove
 
