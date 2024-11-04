@@ -2,7 +2,7 @@ import apis.ConfigEndpoint
 import cats.effect.*
 import cats.effect.std.Console
 import conf.config
-import data.DBConnection
+import data.DbConnection
 import fs2.io.net.Network
 import http.HttpServer
 import natchez.Trace
@@ -14,7 +14,7 @@ object App extends IOApp:
   def program[F[_]: Async: Temporal: Trace: Network: Console] =
     for
       config         <- Resource.eval(config)
-      session        <- DBConnection.single(config.db)
+      session        <- DbConnection.single(config.db)
       accountRepo    <- AccountsRepo.makeResource(session)
       transferRepo   <- TransfersRepo.makeResource(session)
       transferConfig <- Resource.eval(Ref[F].of(config.tc))

@@ -7,7 +7,7 @@ import fs2.io.net.Network
 import natchez.Trace
 import skunk.Session
 
-object DBConnection:
+object DbConnection:
   def single[F[_] : Temporal : Trace : Network : Console](config: DbConfig): Resource[F, Session[F]] =
     Session.single(
       host = config.host.value,

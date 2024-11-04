@@ -85,7 +85,7 @@ object TransfersRepo:
     Resource.eval(make(session))
 
 object TransfersRepoMain extends IOApp:
-  val session2: Resource[IO, Session[IO]] =
+  val session: Resource[IO, Session[IO]] =
     Session.single( // (2)
       host = "localhost",
       port = 5454,
@@ -104,7 +104,7 @@ object TransfersRepoMain extends IOApp:
       "ref",
       LocalDateTime.now
     )
-    session2
+    session
       .flatMap(TransfersRepo.makeResource[IO](_))
       .use: repo => // (3)
         for
