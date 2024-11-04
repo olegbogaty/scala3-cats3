@@ -1,11 +1,10 @@
 package apis
 
 import apis.model.{ConfigError, ConfigRequest, ConfigResponse}
-import cats.Monad
+import cats.{Functor, Monad}
 import cats.effect.kernel.Resource
-import cats.effect.std.Dispatcher
 import cats.effect.{Async, ExitCode, IO, IOApp}
-import conf.{ServerConfig, TransferConfig, config}
+import conf.{TransferConfig, config}
 import http.HttpServer
 import io.circe.generic.auto.*
 import srvc.TransferConfigService
@@ -13,8 +12,6 @@ import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.server.ServerEndpoint
-import sttp.tapir.server.netty.cats.NettyCatsServer
-import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
 object ConfigEndpoint:
   private val configTransfer
@@ -52,7 +49,7 @@ object ConfigEndpoint:
       .map(nel => ConfigError(nel.toList.mkString(", ")))
       .pure[F]
 
-  private def apiEndpoint[F[_]: Monad](
+  private def configTransferLogic[F[_]: Monad](
     service: TransferConfigService[F]
   ): ServerEndpoint[Any, F] =
     configTransfer.serverLogic { request =>
@@ -74,37 +71,32 @@ object ConfigEndpoint:
       yield response
     }
 
+  // for test with swagger
+  private val reviewSettings: PublicEndpoint[Unit, Unit, ConfigResponse, Any] =
+    endpoint.get
+      .in("config-transfer")
+      .out(jsonBody[ConfigResponse])
+
+  private def reviewSettingsLogic[F[_]: Functor](
+    service: TransferConfigService[F]
+  ): ServerEndpoint[Any, F] =
+    reviewSettings.serverLogicSuccess: _ =>
+      service.get.map: transferConfig =>
+        ConfigResponse(
+          s"config settings: tries = ${transferConfig.tries.value}, delay = ${transferConfig.delay}"
+        )
+
   def make[F[_]: Async](
     service: TransferConfigService[F]
-  ): F[List[ServerEndpoint[Any, F]]] = apiEndpoint(service).pure[List].pure[F]
+  ): F[List[ServerEndpoint[Any, F]]] =
+    List(configTransferLogic(service), reviewSettingsLogic(service)).pure[F]
 
   def makeResource[F[_]: Async](
     service: TransferConfigService[F]
   ): Resource[F, List[ServerEndpoint[Any, F]]] =
-    Resource.pure(apiEndpoint(service).pure[List])
+    Resource.pure(configTransferLogic(service).pure[List])
 
-object ConfigEndpointMain extends IOApp:
-
-  def docs[F[_]](
-    e: List[ServerEndpoint[Any, F]]
-  ): List[ServerEndpoint[Any, F]] = SwaggerInterpreter()
-    .fromServerEndpoints[F](e, "docs", "1.0.0")
-
-  private def makeServer[F[_]: Async]: Resource[F, NettyCatsServer[F]] =
-    Dispatcher
-      .parallel[F]
-      .map(NettyCatsServer[F](_))
-
-  def bindServer[F[_]: Async](
-    config: ServerConfig,
-    endpoints: List[ServerEndpoint[Any, F]]
-  ): Resource[F, NettyCatsServer[F]] =
-    makeServer.map(
-      _.host(config.host.value)
-        .port(config.port.value)
-        .addEndpoints(endpoints)
-        .addEndpoints(docs(endpoints))
-    )
+object ConfigEndpointMain extends IOApp: // TODO remove
 
   def run(args: List[String]): IO[ExitCode] =
     (for
@@ -114,22 +106,8 @@ object ConfigEndpointMain extends IOApp:
       tcConfigOld <- tcService.get
       _           <- IO.println(s"TRANSER SERVICE GET: ${tcConfigOld}")
       endpoints   <- ConfigEndpoint.make[IO](tcService)
-      _ <- HttpServer.makeResource[IO](config.http.server, endpoints)
+      _ <- HttpServer
+        .makeResource[IO](config.http.server, endpoints)
         .use(_.serve() *> IO.never)
     yield ())
       .as(ExitCode.Success)
-
-  import cats.implicits.*
-  def a[F[_]: Async](e: List[ServerEndpoint[Any, F]]) = Dispatcher
-    .parallel[F]
-    .map(NettyCatsServer.apply[F](_))
-    .use: server =>
-      for bind <- server
-          .port(8080)
-          .host("localhost")
-          .addEndpoints(e)
-          .start()
-//        _ <- IO.println(s"Go to http://localhost:${bind.port}/docs to open SwaggerUI. Press ENTER key to exit.")
-//        _ <- IO.readLine
-//        _ <- bind.stop()
-      yield bind
