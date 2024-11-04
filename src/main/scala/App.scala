@@ -11,7 +11,7 @@ import repo.{AccountsRepo, TransfersRepo}
 import srvc.TransferConfigService
 
 object App extends IOApp:
-  def program[F[_]: Async: Temporal: Trace: Network: Console] =
+  private def makeDependencies[F[_]: Async: Temporal: Trace: Network: Console] =
     for
       config         <- Resource.eval(config)
       session        <- DbConnection.single(config.db)
@@ -26,7 +26,7 @@ object App extends IOApp:
     yield server
 
   override def run(args: List[String]): IO[ExitCode] =
-    program[IO]
+    makeDependencies[IO]
       .use: server =>
         for
           _ <- server.serve()
