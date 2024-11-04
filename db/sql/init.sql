@@ -11,12 +11,12 @@ INSERT INTO accounts (
   	balance
 ) VALUES (
     1111,
-    2222,
-    1000
-), (
-    4444,
-    5555,
+    9999,
     2000
+), (
+    2222,
+    9999,
+    1000
 );
 
 CREATE TABLE IF NOT EXISTS transfers (
@@ -40,9 +40,9 @@ INSERT INTO transfers (
   	transaction_reference
 ) VALUES (
     1111,
-    500,
+    10.5,
     'STARTED',
-    4444,
-    5555,
+    2222,
+    9999,
     'unique_transaction_reference'
 );
