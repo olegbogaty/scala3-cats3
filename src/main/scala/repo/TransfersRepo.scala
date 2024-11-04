@@ -12,12 +12,11 @@ import skunk.implicits.*
 
 import java.time.LocalDateTime
 
-trait TransfersRepo[F[_]] {
+trait TransfersRepo[F[_]]:
   def insert(transfer: Transfer): F[Unit]
   def select(transfer: Transfer): F[Option[Transfer]]
   def update(transfer: Transfer): F[Unit]
   def delete(transfer: Transfer): F[Unit]
-}
 
 object TransfersRepo:
   private val insertOne: Command[Transfer] =
@@ -64,7 +63,7 @@ object TransfersRepo:
     """.command
 
   def make[F[_]: Sync](session: Session[F]): F[TransfersRepo[F]] =
-    Sync[F].delay(
+    Sync[F].delay:
       new TransfersRepo[F]:
         override def insert(transfer: Transfer): F[Unit] =
           session.execute(insertOne)(transfer).void
@@ -79,7 +78,6 @@ object TransfersRepo:
 
         override def delete(transfer: Transfer): F[Unit] =
           session.execute(deleteOne)(transfer.transactionReference).void
-    )
 
   def makeResource[F[_]: Sync](session: Session[F]): Resource[F, TransfersRepo[F]] =
     Resource.eval(make(session))

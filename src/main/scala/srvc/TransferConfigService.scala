@@ -6,10 +6,9 @@ import cats.syntax.all.*
 import conf.{TransferConfig, config}
 import eu.timepit.refined.types.numeric.PosInt
 
-trait TransferConfigService[F[_]] {
+trait TransferConfigService[F[_]]:
   def set(config: TransferConfig): F[Unit]
   def get: F[TransferConfig]
-}
 
 //  Transfer processing configuration service implementation
 //  – The service should offer settings for:

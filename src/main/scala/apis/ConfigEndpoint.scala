@@ -57,7 +57,7 @@ object ConfigEndpoint:
   private def configTransferLogic[F[_]: Monad](
     service: TransferConfigService[F]
   ): ServerEndpoint[Any, F] =
-    configTransfer.serverLogic { request =>
+    configTransfer.serverLogic: request =>
       for
         validate <- validateRequest(request)
         response <- validate match {
@@ -74,7 +74,6 @@ object ConfigEndpoint:
           case Left(error) => Left(error).pure[F]
         }
       yield response
-    }
 
   // for test with swagger
   private val reviewSettings: PublicEndpoint[Unit, Unit, ConfigResponse, Any] =
@@ -102,7 +101,6 @@ object ConfigEndpoint:
     Resource.eval(make(service))
 
 object ConfigEndpointMain extends IOApp: // TODO remove
-
   def run(args: List[String]): IO[ExitCode] =
     (for
       config      <- config[IO]

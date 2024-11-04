@@ -49,7 +49,8 @@ object AccountsRepo:
     """.command
 
   def make[F[_]: Sync](session: Session[F]): F[AccountsRepo[F]] =
-    Sync[F].delay(new AccountsRepo[F]:
+    Sync[F].delay:
+      new AccountsRepo[F]:
         override def insert(account: Account): F[Unit] =
           session.execute(insertOne)(account).void
 
@@ -61,7 +62,6 @@ object AccountsRepo:
 
         override def delete(account: Account): F[Unit] =
           session.execute(deleteOne)(account.accountId).void
-      )
 
   def makeResource[F[_]: Sync](session: Session[F]): Resource[F, AccountsRepo[F]] =
     Resource.eval(make(session))

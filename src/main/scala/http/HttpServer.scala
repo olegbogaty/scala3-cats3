@@ -23,12 +23,11 @@ object HttpServer:
     config: ServerConfig,
     endpoints: List[ServerEndpoint[Any, F]]
   ): Resource[F, NettyCatsServer[F]] =
-    makeServer.map(
+    makeServer.map:
       _.host(config.host.value)
         .port(config.port.value)
         .addEndpoints(endpoints)
         .addEndpoints(docs(endpoints))
-    )
 
   private def docs[F[_]](
     endpoints: List[ServerEndpoint[Any, F]]
