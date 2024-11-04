@@ -1,5 +1,6 @@
 package apis
 
+import apis.model.TransferRequest.transferRequestExample
 import apis.model.{TransferError, TransferRequest, TransferResponse}
 import cats.effect.{ExitCode, IO, IOApp}
 import io.circe.generic.auto.*
@@ -12,27 +13,33 @@ import sttp.tapir.*
 
 import scala.util.Random
 
+// /enter-transfer
+// An endpoint to accept transfer requests
+// Each request must include essential information such as :
+//  ∗ sender account
+//  ∗ recipient bank code(numeric)
+//  ∗ recipient account (numeric)
+//  ∗ amount
+//  ∗ transaction reference
+
 object EnterTransferEndpoint:
-  val enterTransfer
-    : PublicEndpoint[TransferRequest, TransferError, TransferResponse, Any] =
+  val enterTransfer: PublicEndpoint[TransferRequest, TransferError, TransferResponse, Any] =
     endpoint.post
       .in("enter-transfer")
-      .in(jsonBody[TransferRequest].example {
-        TransferRequest(
-          1,
-          2,
-          3,
-          500.25,
-          "reference"
-        )
-      })
+      .in(jsonBody[TransferRequest].example(transferRequestExample))
       .out(jsonBody[TransferResponse])
       .errorOut(jsonBody[TransferError])
 
-  val apiEndpoint =
-    enterTransfer.serverLogic(request => IO {
-      Either.cond(Random.nextBoolean, TransferResponse("ok"), TransferError("insufficient balance"))
-    })
+  def apiEndpoint =
+    enterTransfer.serverLogic(request =>
+      IO {
+        Either.cond(
+          Random.nextBoolean,
+          TransferResponse("ok"),
+          TransferError("insufficient balance")
+        )
+      }
+    )
 
   val docEndpoint: List[ServerEndpoint[Any, IO]] = SwaggerInterpreter()
     .fromServerEndpoints[IO](List(apiEndpoint), "docs", "1.0.0")
