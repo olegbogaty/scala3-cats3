@@ -1,5 +1,11 @@
 package apis.model
 
+// ... request must include essential information such as :
+//  ∗ sender account
+//  ∗ recipient bank code(numeric)
+//  ∗ recipient account (numeric)
+//  ∗ amount
+//  ∗ transaction reference
 case class TransferRequest(
   senderAccount: Int,
   recipientBankCode: Int,
