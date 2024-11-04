@@ -1,5 +1,6 @@
 package conf
 
+import apis.model.ConfigRequest
 import cats.effect.{Async, IO, IOApp}
 import cats.implicits.given
 import cats.syntax.all.*
@@ -22,6 +23,9 @@ private given Conversion[Int, UserPortNumber] with
 
 private given Conversion[Int, PosInt] with
   def apply(i: Int): PosInt = PosInt.unsafeFrom(i)
+  
+private given Conversion[Int, FiniteDuration] with
+  def apply(i: Int): FiniteDuration = Duration(i, SECONDS)
 
 final case class DbConfig(
   host: NonEmptyString,
@@ -36,9 +40,21 @@ final case class TransferConfig(
   delay: FiniteDuration
 )
 
+object TransferConfig:
+  def fromRequest(request: ConfigRequest): TransferConfig =
+    TransferConfig(request.tries, request.delay)
+
+final case class ServerConfig(
+  host: NonEmptyString,
+  port: UserPortNumber
+)
+
+final case class HttpConfig(server: ServerConfig)
+
 final case class AppConfig(
   db: DbConfig,
-  tc: TransferConfig
+  tc: TransferConfig,
+  http: HttpConfig
 )
 
 private def dbConfig[F[_]]: ConfigValue[F, DbConfig] =
@@ -56,8 +72,17 @@ private def transferConfig[F[_]]: ConfigValue[F, TransferConfig] =
     env("TRANSFER_CONFIG_DELAY").as[FiniteDuration].default(10.seconds)
   ).parMapN(TransferConfig.apply)
 
+private def serverConfig[F[_]]: ConfigValue[F, ServerConfig] =
+  (
+    env("HTTP_SERVER_HOST").as[NonEmptyString].default("localhost"),
+    env("HTTP_SERVER_PORT").as[UserPortNumber].default(8080)
+  ).parMapN(ServerConfig.apply)
+
+private def httpConfig[F[_]]: ConfigValue[F, HttpConfig] =
+  serverConfig.map(HttpConfig.apply)
+
 private def appConfig[F[_]]: ConfigValue[F, AppConfig] =
-  (dbConfig, transferConfig).parMapN(AppConfig.apply)
+  (dbConfig, transferConfig, httpConfig).parMapN(AppConfig.apply)
 
 def config[F[_]: Async]: F[AppConfig] = appConfig.load
 
