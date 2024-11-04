@@ -1,3 +1,3 @@
 package apis.model
 
-case class TransferError(error: String)
+case class TransferError(msg: String)

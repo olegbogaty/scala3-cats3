@@ -1,3 +1,3 @@
 package apis.model
 
-case class ConfigError(error: String)
+case class ConfigError(msg: String)

@@ -1,3 +1,3 @@
 package apis.model
 
-case class TransferResponse(text: String)
+case class TransferResponse(msg: String)
