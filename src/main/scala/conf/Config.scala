@@ -86,6 +86,6 @@ private def appConfig[F[_]]: ConfigValue[F, AppConfig] =
 
 def config[F[_]: Async]: F[AppConfig] = appConfig.load
 
-object Config extends IOApp.Simple:
+object Config extends IOApp.Simple: // TODO remove
   def run: IO[Unit] =
     config[IO].flatMap(IO.println)

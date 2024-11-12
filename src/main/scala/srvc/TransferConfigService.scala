@@ -43,7 +43,7 @@ object TransferConfigService:
   ): Resource[F, TransferConfigService[F]] =
     Resource.eval(make(init))
 
-object TransferConfigServiceMain extends IOApp:
+object TransferConfigServiceMain extends IOApp: // TODO remove
   import TransferConfigService.*
 
   import scala.concurrent.duration.*

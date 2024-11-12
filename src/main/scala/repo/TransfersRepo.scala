@@ -82,7 +82,7 @@ object TransfersRepo:
   def makeResource[F[_]: Sync](session: Session[F]): Resource[F, TransfersRepo[F]] =
     Resource.eval(make(session))
 
-object TransfersRepoMain extends IOApp:
+object TransfersRepoMain extends IOApp: // TODO remove
   val session: Resource[IO, Session[IO]] =
     Session.single( // (2)
       host = "localhost",
