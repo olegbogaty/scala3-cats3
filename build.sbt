@@ -30,6 +30,8 @@ lazy val root = project
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
       "com.softwaremill.sttp.client3" %% "circe" % "3.9.8" % Test
     ),
-    libraryDependencies += "com.github.suprnation.cats-actors" %% "cats-actors" % "2.0.0-RC5"
+    libraryDependencies += "com.github.suprnation.cats-actors" %% "cats-actors" % "2.0.0-RC5",
+    libraryDependencies += "io.scalaland" %% "chimney" % "1.5.0"
+
 //    libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.17.7"
   )
