@@ -10,7 +10,7 @@ import skunk.implicits.*
 
 trait AccountsRepo[F[_]]:
   def insert(account: Account): F[Unit]
-  def select(account: Account): F[Option[Account]]
+  def select(id: Int): F[Option[Account]]
   def update(account: Account): F[Unit]
   def delete(account: Account): F[Unit]
 
@@ -53,8 +53,8 @@ object AccountsRepo:
         override def insert(account: Account): F[Unit] =
           session.execute(insertOne)(account).void
 
-        override def select(account: Account): F[Option[Account]] =
-          session.option(selectOne)(account.accountId)
+        override def select(id: Int): F[Option[Account]] =
+          session.option(selectOne)(id)
 
         override def update(account: Account): F[Unit] =
           session.execute(updateOne)(account.balance, account.accountId).void
@@ -83,9 +83,9 @@ object AccountRepoMain extends IOApp: // TODO remove
         for
           _      <- repo.delete(account)
           _      <- repo.insert(account)
-          option <- repo.select(account)
+          option <- repo.select(account.accountId)
           _      <- IO.println(option)
           _      <- repo.update(account.copy(balance = account.balance - 50))
-          option <- repo.select(account)
+          option <- repo.select(account.accountId)
           _      <- IO.println(option)
         yield ExitCode.Success
