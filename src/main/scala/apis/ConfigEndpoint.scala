@@ -1,6 +1,6 @@
 package apis
 
-import apis.model.{ConfigError, ConfigRequest, ConfigResponse}
+import apis.model.{ConfigErrorResponse, ConfigRequest, ConfigResponse}
 import cats.effect.kernel.Resource
 import cats.effect.{Async, ExitCode, IO, IOApp}
 import cats.{Functor, Monad}
@@ -18,7 +18,7 @@ object ConfigEndpoint:
   //  An endpoint to manage the processing configuration of transfer requests,
   //  allowing adjustments of parameters like status check frequency and retry limits.
   private val configTransfer
-    : PublicEndpoint[ConfigRequest, ConfigError, ConfigResponse, Any] =
+    : PublicEndpoint[ConfigRequest, ConfigErrorResponse, ConfigResponse, Any] =
     endpoint.post
       .in("config-transfer")
       .in(
@@ -31,13 +31,13 @@ object ConfigEndpoint:
           }
       )
       .out(jsonBody[ConfigResponse])
-      .errorOut(jsonBody[ConfigError])
+      .errorOut(jsonBody[ConfigErrorResponse])
 
   import cats.data.ValidatedNel
   import cats.syntax.all.*
   private def validateRequest[F[_]: Monad](
     request: ConfigRequest
-  ): F[Either[ConfigError, TransferConfig]] =
+  ): F[Either[ConfigErrorResponse, TransferConfig]] =
     val tries: ValidatedNel[String, Int] =
       if (request.tries > 0) request.tries.validNel[String]
       else "tries should be more then 0".invalidNel
@@ -48,7 +48,7 @@ object ConfigEndpoint:
       .mapN((_, _) => TransferConfig.fromRequest(request))
       .toEither
       .left
-      .map(nel => ConfigError(nel.toList.mkString(", ")))
+      .map(nel => ConfigErrorResponse(nel.toList.mkString(", ")))
       .pure[F]
 
   private def configTransferLogic[F[_]: Monad](
@@ -57,7 +57,7 @@ object ConfigEndpoint:
     configTransfer.serverLogic: request =>
       for
         validate <- validateRequest(request)
-        response <- validate match {
+        response <- validate match
           case Right(config) =>
             service
               .set(config)
@@ -69,7 +69,6 @@ object ConfigEndpoint:
                 )
               )
           case Left(error) => Left(error).pure[F]
-        }
       yield response
 
   // for test with swagger
