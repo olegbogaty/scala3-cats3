@@ -1,14 +1,16 @@
 package apis
 
 import apis.model.TransferRequest.transferRequestExample
-import apis.model.{TransferError, TransferRequest, TransferResponse}
+import apis.model.{TransferErrorResponse, TransferRequest, TransferResponse}
+import cats.Monad
 import cats.effect.kernel.Resource
 import cats.effect.{Async, ExitCode, IO, IOApp}
 import cats.implicits.*
 import data.domain.Transfer
 import http.HttpServer
 import io.circe.generic.auto.*
-import srvc.TransferService
+import srvc.TransfersService
+import srvc.model.TransferError
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
@@ -19,41 +21,70 @@ import scala.util.Random
 // /enter-transfer
 // An endpoint to accept transfer requests
 object TransferEndpoint:
-  private val enterTransfer
-    : PublicEndpoint[TransferRequest, TransferError, TransferResponse, Any] =
+  private val enterTransfer: PublicEndpoint[
+    TransferRequest,
+    TransferErrorResponse,
+    TransferResponse,
+    Any
+  ] =
     endpoint.post
       .in("enter-transfer")
       .in(jsonBody[TransferRequest].example(transferRequestExample))
       .out(jsonBody[TransferResponse])
-      .errorOut(jsonBody[TransferError])
+      .errorOut(jsonBody[TransferErrorResponse])
 
-  private def enterTransferLogic[F[_]: Async](
-    service: TransferService[F]
+  import cats.data.ValidatedNel
+  import cats.syntax.all.*
+  private def validateRequest[F[_]: Monad](
+    request: TransferRequest
+  ): F[Either[TransferErrorResponse, Transfer]] =
+    val tries: ValidatedNel[String, BigDecimal] =
+      if (request.amount > 0) request.amount.validNel[String]
+      else "amount should be more then 0".invalidNel
+    val delay: ValidatedNel[String, Int] =
+      if (request.senderAccount != request.recipientAccount)
+        request.senderAccount.validNel[String]
+      else
+        "sender account number should not be a recipient account number".invalidNel
+    (tries, delay)
+      .mapN((_, _) => Transfer.fromRequest(request))
+      .toEither
+      .left
+      .map(nel => TransferErrorResponse(nel.toList.mkString(", ")))
+      .pure[F]
+
+  private def enterTransferLogic[F[_]: Monad](
+    service: TransfersService[F]
   ): ServerEndpoint[Any, F] =
-    enterTransfer.serverLogic(request =>
-      Either
-        .cond(
-          Random.nextBoolean,
-          TransferResponse("transfer success"),
-          TransferError("insufficient balance")
-        )
-        .pure[F]
-    )
+    enterTransfer.serverLogic: request =>
+      for
+        validate <- validateRequest(request)
+        response <- validate match
+          case Right(transfer) =>
+            service.transfer(transfer)
+              .map:
+                _.map: right =>
+                  TransferResponse(s"transfer status: ${right.status}")
+                .left
+                .map: left =>
+                  TransferErrorResponse(s"transfer error: ${left.msg}")
+          case Left(error) => Left(error).pure[F]
+      yield response
 
   def make[F[_]: Async](
-    service: TransferService[F]
+    service: TransfersService[F]
   ): F[List[ServerEndpoint[Any, F]]] =
     List(enterTransferLogic(service) /*, reviewSettingsLogic(service)*/ )
       .pure[F]
 
   def makeResource[F[_]: Async](
-    service: TransferService[F]
+    service: TransfersService[F]
   ): Resource[F, List[ServerEndpoint[Any, F]]] =
     Resource.eval(make(service))
 
 object TransferEndpointMain extends IOApp:
-  private val mockService = new TransferService[IO]:
-    override def transfer(transfer: Transfer): IO[Unit] = IO.unit
+  private val mockService = new TransfersService[IO]:
+    override def transfer(transfer: Transfer): IO[Either[TransferError, Transfer]] = IO(Left(TransferError("error")))
   def run(args: List[String]): IO[ExitCode] =
     (for
       config    <- conf.config[IO]
