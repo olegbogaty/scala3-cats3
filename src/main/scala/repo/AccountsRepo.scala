@@ -1,6 +1,5 @@
 package repo
 
-import cats.Monad
 import cats.effect.*
 import cats.syntax.all.*
 import data.domain.Account
@@ -66,9 +65,7 @@ object AccountsRepo:
   def makeResource[F[_]: Sync](session: Session[F]): Resource[F, AccountsRepo[F]] =
     Resource.eval(make(session))
 
-end AccountsRepo
-
-object AccountRepoMain extends IOApp:
+object AccountRepoMain extends IOApp: // TODO remove
   val session: Resource[IO, Session[IO]] =
     Session.single( // (2)
       host = "localhost",
