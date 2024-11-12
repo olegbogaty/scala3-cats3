@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS transfers (
     recipient_bank_code INT NOT NULL,
     transaction_reference VARCHAR UNIQUE NOT NULL,
     transfer_date TIMESTAMP NOT NULL DEFAULT now (),
-    CHECK(status in ('STARTED','RUNNING','SUCCESS','FAILURE'))
+    CHECK(status in ('PENDING','SUCCESS','FAILURE'))
 );
 
 INSERT INTO transfers (
@@ -41,7 +41,7 @@ INSERT INTO transfers (
 ) VALUES (
     1111,
     10.5,
-    'STARTED',
+    'PENDING',
     2222,
     9999,
     'unique_transaction_reference'

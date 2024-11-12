@@ -1,5 +1,6 @@
 package data.domain
 
+import apis.model.TransferRequest
 import data.domain.Transfer.Status
 import skunk.Codec
 
@@ -17,7 +18,7 @@ case class Transfer(
 
 object Transfer:
   enum Status:
-    case STARTED, RUNNING, SUCCESS, FAILURE
+    case PENDING, SUCCESS, FAILURE
 
   object Status:
     given codec: Codec[Status] =
@@ -26,3 +27,12 @@ object Transfer:
     private def fromString(status: String): Either[String, Status] =
       try Right(Status.valueOf(status))
       catch case _ => Left("UNKNOWN STATUS")
+
+  import io.scalaland.chimney.dsl._
+  def fromRequest(request: TransferRequest): Transfer =
+    request.into[Transfer]
+      .withFieldRenamed(_.senderAccount, _.accountId)
+      .withFieldConst(_.transferDate, LocalDateTime.now)
+      .withFieldConst(_.status, Status.PENDING)
+      .transform
+
