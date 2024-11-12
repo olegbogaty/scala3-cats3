@@ -96,7 +96,7 @@ object TransfersRepoMain extends IOApp: // TODO remove
     val transfer = Transfer(
       1,
       BigDecimal(100.25),
-      Transfer.Status.RUNNING,
+      Transfer.Status.PENDING,
       2,
       3,
       "ref",
