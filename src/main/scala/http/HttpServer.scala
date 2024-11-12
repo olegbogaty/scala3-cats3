@@ -54,12 +54,12 @@ object HttpServer:
   ): Resource[F, HttpServer[F]] =
     for
       server <- bindServer(config, endpoints)
-      handle <- Resource.eval {
+      handle <- Resource.eval:
         for
           _ <- Console[F].println(
             s"Go to http://localhost:${config.port.value}/docs to open SwaggerUI"
           )
+          _ <- server.start()
         yield new HttpServer[F]:
-          override def serve(): F[Unit] = server.start().void
-      }
+          override def serve(): F[Unit] = ().pure[F]
     yield handle
