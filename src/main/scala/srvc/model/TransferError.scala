@@ -1,3 +1,3 @@
-package apis.model
+package srvc.model
 
 case class TransferError(msg: String)
