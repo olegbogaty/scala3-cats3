@@ -11,13 +11,9 @@ import http.HttpServer
 import natchez.Trace
 import natchez.Trace.Implicits.noop
 import repo.{AccountsRepo, TransfersRepo}
-import srvc.{TransferConfigService, TransferService}
+import srvc.{PaymentGatewayService, TransferConfigService, TransfersService}
 
 object App extends IOApp:
-  private def mockService[F[_]: Applicative] =
-    new TransferService[F]: // TODO remove
-      override def transfer(transfer: Transfer): F[Unit] = ().pure[F]
-
   private def makeDependencies[F[_]: Async: Temporal: Trace: Network: Console] =
     for
       config         <- Resource.eval(config)
@@ -25,10 +21,12 @@ object App extends IOApp:
       accountRepo    <- AccountsRepo.makeResource(session)
       transferRepo   <- TransfersRepo.makeResource(session)
       transferConfig <- Resource.eval(Ref[F].of(config.tc))
+      paymentGatewayService <- PaymentGatewayService.makeResource
       transferConfigService <- TransferConfigService.makeResource(
         transferConfig
       )
-      transferEndpoint <- TransferEndpoint.makeResource(mockService)
+      transfersService <- TransfersService.makeResource(accountRepo, transferRepo, paymentGatewayService)
+      transferEndpoint <- TransferEndpoint.makeResource(transfersService)
       configEndpoints  <- ConfigEndpoint.makeResource(transferConfigService)
       server <- HttpServer.makeResource(
         config.http.server,
@@ -38,9 +36,5 @@ object App extends IOApp:
 
   override def run(args: List[String]): IO[ExitCode] =
     makeDependencies[IO]
-      .use: server =>
-        for
-          _ <- server.serve()
-          _ <- IO.never
-        yield ()
+      .useForever
       .as(ExitCode.Success)
