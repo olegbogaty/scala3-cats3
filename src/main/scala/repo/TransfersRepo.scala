@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 
 trait TransfersRepo[F[_]]:
   def insert(transfer: Transfer): F[Unit]
-  def select(transfer: Transfer): F[Option[Transfer]]
+  def select(transactionReference: String): F[Option[Transfer]]
   def update(transfer: Transfer): F[Unit]
   def delete(transfer: Transfer): F[Unit]
 
@@ -68,8 +68,8 @@ object TransfersRepo:
         override def insert(transfer: Transfer): F[Unit] =
           session.execute(insertOne)(transfer).void
 
-        override def select(transfer: Transfer): F[Option[Transfer]] =
-          session.option(selectOne)(transfer.transactionReference)
+        override def select(transactionReference: String): F[Option[Transfer]] =
+          session.option(selectOne)(transactionReference)
 
         override def update(transfer: Transfer): F[Unit] =
           session
@@ -108,9 +108,9 @@ object TransfersRepoMain extends IOApp: // TODO remove
         for
           _      <- repo.delete(transfer)
           _      <- repo.insert(transfer)
-          option <- repo.select(transfer)
+          option <- repo.select(transfer.transactionReference)
           _      <- IO.println(option)
           _      <- repo.update(transfer.copy(status = Transfer.Status.SUCCESS))
-          option <- repo.select(transfer)
+          option <- repo.select(transfer.transactionReference)
           _      <- IO.println(option)
         yield ExitCode.Success
