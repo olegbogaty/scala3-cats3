@@ -1,11 +1,10 @@
 package apis
 
 import apis.model.TransferRequest.transferRequestExample
-import apis.model.{TransferErrorResponse, TransferRequest, TransferResponse}
-import cats.Monad
+import apis.model.{TransferErrorResponse, TransferRequest, TransferResponse, TransferStatusRequest}
+import cats.{Functor, Monad}
 import cats.effect.kernel.Resource
 import cats.effect.{Async, ExitCode, IO, IOApp}
-import cats.implicits.*
 import data.domain.Transfer
 import http.HttpServer
 import io.circe.generic.auto.*
@@ -15,8 +14,6 @@ import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.server.ServerEndpoint
-
-import scala.util.Random
 
 // /enter-transfer
 // An endpoint to accept transfer requests
@@ -61,20 +58,40 @@ object TransferEndpoint:
         validate <- validateRequest(request)
         response <- validate match
           case Right(transfer) =>
-            service.transfer(transfer)
+            service
+              .transfer(transfer)
               .map:
                 _.map: right =>
                   TransferResponse(s"transfer status: ${right.status}")
                 .left
-                .map: left =>
-                  TransferErrorResponse(s"transfer error: ${left.msg}")
+                  .map: left =>
+                    TransferErrorResponse(s"transfer error: ${left.msg}")
           case Left(error) => Left(error).pure[F]
       yield response
+
+  private val checkTransferStatus
+    : Endpoint[Unit, TransferStatusRequest, Unit, TransferResponse, Any] =
+    endpoint.post
+      .in("check-transfer-status")
+      .in(
+        jsonBody[TransferStatusRequest]
+          .example(TransferStatusRequest("unique transaction reference"))
+      )
+      .out(jsonBody[TransferResponse])
+
+  private def checkTransferStatusLogic[F[_] : Functor](
+    service: TransfersService[F]
+  ): ServerEndpoint[Any, F] =
+    checkTransferStatus.serverLogicSuccess: request =>
+      service.checkTransferStatus(request.transactionReference).map: transferStatus =>
+        TransferResponse(
+          s"transfer status: $transferStatus"
+        )
 
   def make[F[_]: Async](
     service: TransfersService[F]
   ): F[List[ServerEndpoint[Any, F]]] =
-    List(enterTransferLogic(service) /*, reviewSettingsLogic(service)*/ )
+    List(enterTransferLogic(service), checkTransferStatusLogic(service))
       .pure[F]
 
   def makeResource[F[_]: Async](
@@ -84,7 +101,11 @@ object TransferEndpoint:
 
 object TransferEndpointMain extends IOApp:
   private val mockService = new TransfersService[IO]:
-    override def transfer(transfer: Transfer): IO[Either[TransferError, Transfer]] = IO(Left(TransferError("error")))
+    override def transfer(
+      transfer: Transfer
+    ): IO[Either[TransferError, Transfer]] = IO(Left(TransferError("error")))
+    override def checkTransferStatus(transactionReference: String): IO[Option[Transfer.Status]] =
+      IO(Some(Transfer.Status.PENDING))
   def run(args: List[String]): IO[ExitCode] =
     (for
       config    <- conf.config[IO]
