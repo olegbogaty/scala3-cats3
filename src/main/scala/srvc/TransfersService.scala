@@ -13,6 +13,9 @@ import srvc.model.TransferError
 
 trait TransfersService[F[_]]:
   def transfer(transfer: Transfer): F[Either[TransferError, Transfer]]
+  def checkTransferStatus(
+    transactionReference: String
+  ): F[Option[Transfer.Status]]
 
 object TransfersService:
   def make[F[_]: Async: Monad](
@@ -30,7 +33,7 @@ object TransfersService:
           transfer: Transfer
         ): Either[String, (Account, Transfer)] =
           val amount = Either.cond(
-              account.balance >= transfer.amount,
+            account.balance >= transfer.amount,
             (account, transfer),
             "insufficient amount"
           )
@@ -64,16 +67,29 @@ object TransfersService:
                   .into[Transfer]
                   .withFieldConst(_.status, Status.FAILURE)
                   .transform
-                for
-                  _ <- transfersRepo.insert(updatedTransfer)
+                for _ <- transfersRepo.insert(updatedTransfer)
                 yield Left(TransferError(s"transfer failed: $error"))
           yield result
 
-        def checkTransferStatus(
+        override def checkTransferStatus(
+          transactionReference: String
+        ): F[Option[Transfer.Status]] =
+          for
+            transfer <- transfersRepo.select(transactionReference)
+            result   <- transfer.traverse: transfer =>
+              transfer.status match
+                case Transfer.Status.PENDING =>
+                  checkTransferStatus(transfer)
+                case status => status.pure[F]
+          yield result
+
+        private def checkTransferStatus(
           transfer: Transfer
         ): F[Transfer.Status] =
           for
-            status <- paymentGatewayService.checkTransferStatus(transfer)
+            status <- paymentGatewayService.checkTransferStatus(
+              transfer.transactionReference
+            )
             result <- status match
               case Right(transferStatus) =>
                 Transfer.Status.valueOf(transferStatus.msg) match
@@ -83,7 +99,7 @@ object TransfersService:
                       .withFieldConst(_.status, Status.FAILURE)
                       .transform
                     for
-                      _ <- transfersRepo.update(updatedTransfer)
+                      _       <- transfersRepo.update(updatedTransfer)
                       account <- accountsRepo.select(updatedTransfer.accountId)
                       updatedAccount = account.map:
                         _.into[Account]
