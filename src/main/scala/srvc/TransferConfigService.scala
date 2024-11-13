@@ -5,8 +5,9 @@ import cats.effect.*
 import cats.syntax.all.*
 import conf.{TransferConfig, config}
 import eu.timepit.refined.types.numeric.PosInt
+import logs.Log
 
-trait TransferConfigService[F[_]]:
+trait TransferConfigService[F[_]] extends Log[F]:
   def set(config: TransferConfig): F[Unit]
   def get: F[TransferConfig]
 
@@ -29,7 +30,8 @@ object TransferConfigService:
     Sync[F].delay:
       new TransferConfigService[F]:
         override def set(config: TransferConfig): F[Unit] =
-          init.set(config)
+          log.info(s"received new transfer config: $config") *>
+            init.set(config)
         override def get: F[TransferConfig] =
           init.get
 
@@ -47,7 +49,7 @@ object TransferConfigServiceMain extends IOApp: // TODO remove
   import TransferConfigService.*
 
   import scala.concurrent.duration.*
-  val newConfig = TransferConfig(
+  private val newConfig = TransferConfig(
     tries = PosInt.unsafeFrom(123),
     delay = 18.seconds
   )

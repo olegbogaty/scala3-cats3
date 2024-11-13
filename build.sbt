@@ -31,7 +31,10 @@ lazy val root = project
       "com.softwaremill.sttp.client3" %% "circe" % "3.9.8" % Test
     ),
     libraryDependencies += "com.github.suprnation.cats-actors" %% "cats-actors" % "2.0.0-RC5",
-    libraryDependencies += "io.scalaland" %% "chimney" % "1.5.0"
+    libraryDependencies += "io.scalaland" %% "chimney" % "1.5.0",
+    libraryDependencies += "com.outr" %% "scribe" % "3.15.2",
+    // logging
+    libraryDependencies += "com.outr" %% "scribe-cats" % "3.15.2"
 
-//    libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.17.7"
+    //    libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.17.7"
   )
