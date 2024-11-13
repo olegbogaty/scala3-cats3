@@ -1,13 +1,75 @@
 package repo
 
-import cats.effect.{Resource, Sync}
+import cats.effect.{IO, Resource, Sync}
 import cats.implicits.*
 import data.domain.Transfer
+import munit.CatsEffectSuite
+import repo.TransfersRepoSuite.testTransfer
 
 import java.time.LocalDateTime
 import scala.collection.concurrent.TrieMap
 
-class TransfersRepoSuite {}
+class TransfersRepoSuite extends CatsEffectSuite:
+
+  private val initialTransfer = testTransfer
+
+  def withRepo(testCode: TransfersRepo[IO] => IO[Unit]): IO[Unit] =
+    TransfersRepoSuite.test[IO].flatMap(testCode)
+
+  test("insert should store a new transfer"):
+    withRepo: repo =>
+      val newTransfer = Transfer(
+        accountId = 1,
+        amount = BigDecimal(1000),
+        status = Transfer.Status.PENDING,
+        recipientAccount = 3,
+        recipientBankCode = 4,
+        transactionReference = "newTransaction",
+        transferDate = LocalDateTime.now
+      )
+      for
+        _         <- repo.insert(newTransfer)
+        retrieved <- repo.select(newTransfer.transactionReference)
+      yield assertEquals(retrieved, Some(newTransfer))
+
+  test("select should retrieve an existing transfer"):
+    withRepo: repo =>
+      for retrieved <- repo.select(initialTransfer.transactionReference)
+      yield assertEquals(retrieved, Some(initialTransfer))
+
+  test("update should modify an existing transfer's details"):
+    withRepo: repo =>
+      val updatedTransfer =
+        initialTransfer.copy(status = Transfer.Status.SUCCESS)
+      for
+        _         <- repo.update(updatedTransfer)
+        retrieved <- repo.select(initialTransfer.transactionReference)
+      yield assertEquals(retrieved.map(_.status), Some(Transfer.Status.SUCCESS))
+
+  test("update should do nothing if the transfer does not exist"):
+    withRepo: repo =>
+      val nonExistentTransfer =
+        initialTransfer.copy(transactionReference = "nonExistentReference")
+      for
+        _         <- repo.update(nonExistentTransfer)
+        retrieved <- repo.select(nonExistentTransfer.transactionReference)
+      yield assertEquals(retrieved, None)
+
+  test("delete should remove an existing transfer"):
+    withRepo: repo =>
+      for
+        _         <- repo.delete(initialTransfer)
+        retrieved <- repo.select(initialTransfer.transactionReference)
+      yield assertEquals(retrieved, None)
+
+  test("delete should do nothing if the transfer does not exist"):
+    withRepo: repo =>
+      val nonExistentTransfer =
+        initialTransfer.copy(transactionReference = "nonExistentReference")
+      for
+        _         <- repo.delete(nonExistentTransfer)
+        retrieved <- repo.select(nonExistentTransfer.transactionReference)
+      yield assertEquals(retrieved, None)
 
 object TransfersRepoSuite:
   val testTransfer: Transfer = Transfer(

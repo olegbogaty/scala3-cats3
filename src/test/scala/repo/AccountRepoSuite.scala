@@ -4,12 +4,13 @@ import cats.effect.{IO, Resource, Sync}
 import cats.implicits.*
 import data.domain.Account
 import munit.CatsEffectSuite
+import repo.AccountRepoSuite.testAccount
 
 import scala.collection.concurrent.TrieMap
 
 class AccountRepoSuite extends CatsEffectSuite:
 
-  private val initialAccount = Account(0, 1, BigDecimal(1000))
+  private val initialAccount = testAccount
 
   def withRepo(testCode: AccountsRepo[IO] => IO[Unit]): IO[Unit] =
     AccountRepoSuite.test[IO].flatMap(testCode)
