@@ -19,15 +19,12 @@ trait TransfersService[F[_]]:
 
 object TransfersService:
   def make[F[_]: Async: Monad](
-    accountsRepo: AccountsRepo[F],
-//                  accountService: AccountService[F],
+    accountService: AccountService[F],
     transfersRepo: TransfersRepo[F],
     paymentGatewayService: PaymentGatewayService[F]
   ): F[TransfersService[F]] =
     Sync[F].delay:
       new TransfersService[F]:
-        private def lookup(accountId: Int): F[Option[Account]] =
-          accountsRepo.select(accountId)
         private def checkTransfer(
           account: Account,
           transfer: Transfer
@@ -53,12 +50,8 @@ object TransfersService:
             response <- paymentGatewayService.enterTransfer(transfer)
             result <- response match
               case Right(response) =>
-                val updatedAccount = account
-                  .into[Account]
-                  .withFieldComputed(_.balance, _.balance - transfer.amount)
-                  .transform
                 for
-                  _ <- accountsRepo.update(updatedAccount)
+                  _ <- accountService.enterWithdrawal(account, transfer.amount)
                   _ <- transfersRepo.insert(transfer)
                   _ <- checkTransferStatus(transfer).start
                 yield Right(transfer)
@@ -68,7 +61,7 @@ object TransfersService:
                   .withFieldConst(_.status, Status.FAILURE)
                   .transform
                 for _ <- transfersRepo.insert(updatedTransfer)
-                yield Left(TransferError(s"transfer failed: $error"))
+                yield Left(TransferError(s"transfer failed: ${error.msg}"))
           yield result
 
         override def checkTransferStatus(
@@ -83,6 +76,26 @@ object TransfersService:
                 case status => status.pure[F]
           yield result
 
+        private def handleTransferFailure(transfer: Transfer): F[Transfer.Status] =
+          val updatedTransfer = transfer
+            .into[Transfer]
+            .withFieldConst(_.status, Status.FAILURE)
+            .transform
+          for
+            _ <- transfersRepo.update(updatedTransfer)
+            account <- accountService.lookup(updatedTransfer.accountId)
+            _ <- account.traverse:
+              accountService.enterWithdrawal(_, -transfer.amount)
+          yield Transfer.Status.FAILURE
+
+        private def handleTransferSuccess(transfer: Transfer): F[Transfer.Status] =
+          val updatedTransfer = transfer
+            .into[Transfer]
+            .withFieldConst(_.status, Status.SUCCESS)
+            .transform
+          for _ <- transfersRepo.update(updatedTransfer)
+            yield Transfer.Status.SUCCESS
+
         private def checkTransferStatus(
           transfer: Transfer
         ): F[Transfer.Status] =
@@ -94,30 +107,9 @@ object TransfersService:
               case Right(transferStatus) =>
                 Transfer.Status.valueOf(transferStatus.msg) match
                   case Transfer.Status.FAILURE =>
-                    val updatedTransfer = transfer
-                      .into[Transfer]
-                      .withFieldConst(_.status, Status.FAILURE)
-                      .transform
-                    for
-                      _       <- transfersRepo.update(updatedTransfer)
-                      account <- accountsRepo.select(updatedTransfer.accountId)
-                      updatedAccount = account.map:
-                        _.into[Account]
-                          .withFieldComputed(
-                            _.balance,
-                            _.balance + transfer.amount
-                          )
-                          .transform
-                      _ <- updatedAccount.traverse:
-                        accountsRepo.update
-                    yield Transfer.Status.FAILURE
+                    handleTransferFailure(transfer)
                   case Transfer.Status.SUCCESS =>
-                    val updatedTransfer = transfer
-                      .into[Transfer]
-                      .withFieldConst(_.status, Status.SUCCESS)
-                      .transform
-                    for _ <- transfersRepo.update(updatedTransfer)
-                    yield Transfer.Status.SUCCESS
+                    handleTransferSuccess(transfer)
                   case Transfer.Status.PENDING =>
                     Transfer.Status.PENDING.pure[F]
               case Left(errorResponse) =>
@@ -126,7 +118,7 @@ object TransfersService:
 
         def transfer(transfer: Transfer): F[Either[TransferError, Transfer]] =
           for
-            option <- lookup(transfer.accountId)
+            option <- accountService.lookup(transfer.accountId)
             result <- option match
               case Some(account) =>
                 checkTransfer(account, transfer) match
@@ -138,10 +130,9 @@ object TransfersService:
           yield result
 
   def makeResource[F[_]: Async](
-    accountsRepo: AccountsRepo[F],
-//                               accountService: AccountService[F],
+    accountService: AccountService[F],
     transferRepo: TransfersRepo[F],
     paymentGatewayService: PaymentGatewayService[F]
   ): Resource[F, TransfersService[F]] =
     Resource.eval:
-      make(accountsRepo, transferRepo, paymentGatewayService)
+      make(accountService, transferRepo, paymentGatewayService)
