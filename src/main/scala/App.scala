@@ -15,6 +15,8 @@ object App extends IOApp:
   override def run(args: List[String]): IO[ExitCode] =
     makeDependencies[IO].useForever.as(ExitCode.Success)
 
+  // Other considerations:
+  // You may directly construct service and class instances, bypassing the need for dependency injection.
   private def makeDependencies[F[_]: Async: Temporal: Trace: Network: Console]
     : Resource[F, Unit] =
     for
