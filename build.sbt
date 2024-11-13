@@ -34,7 +34,7 @@ lazy val root = project
     libraryDependencies += "io.scalaland" %% "chimney" % "1.5.0",
     libraryDependencies += "com.outr" %% "scribe" % "3.15.2",
     // logging
-    libraryDependencies += "com.outr" %% "scribe-cats" % "3.15.2"
-
-    //    libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.17.7"
+    libraryDependencies += "com.outr" %% "scribe-cats" % "3.15.2",
+    // testing
+    libraryDependencies += "org.typelevel" %% "munit-cats-effect" % "2.0.0" % Test
   )
