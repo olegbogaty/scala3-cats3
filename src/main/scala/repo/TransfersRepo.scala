@@ -62,6 +62,11 @@ object TransfersRepo:
       WHERE transaction_reference = $varchar
     """.command
 
+  def makeResource[F[_]: Sync](
+    session: Session[F]
+  ): Resource[F, TransfersRepo[F]] =
+    Resource.eval(make(session))
+
   def make[F[_]: Sync](session: Session[F]): F[TransfersRepo[F]] =
     Sync[F].delay:
       new TransfersRepo[F]:
@@ -78,9 +83,6 @@ object TransfersRepo:
 
         override def delete(transfer: Transfer): F[Unit] =
           session.execute(deleteOne)(transfer.transactionReference).void
-
-  def makeResource[F[_]: Sync](session: Session[F]): Resource[F, TransfersRepo[F]] =
-    Resource.eval(make(session))
 
 object TransfersRepoMain extends IOApp: // TODO remove
   val session: Resource[IO, Session[IO]] =

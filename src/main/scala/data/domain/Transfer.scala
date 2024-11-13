@@ -2,6 +2,7 @@ package data.domain
 
 import apis.model.TransferRequest
 import data.domain.Transfer.Status
+import io.scalaland.chimney.dsl.*
 import skunk.Codec
 
 import java.time.LocalDateTime
@@ -17,6 +18,14 @@ case class Transfer(
 )
 
 object Transfer:
+  def fromRequest(request: TransferRequest): Transfer =
+    request
+      .into[Transfer]
+      .withFieldRenamed(_.senderAccount, _.accountId)
+      .withFieldConst(_.transferDate, LocalDateTime.now)
+      .withFieldConst(_.status, Status.PENDING)
+      .transform
+
   enum Status:
     case PENDING, SUCCESS, FAILURE
 
@@ -27,12 +36,3 @@ object Transfer:
     private def fromString(status: String): Either[String, Status] =
       try Right(Status.valueOf(status))
       catch case _ => Left("UNKNOWN STATUS")
-
-  import io.scalaland.chimney.dsl._
-  def fromRequest(request: TransferRequest): Transfer =
-    request.into[Transfer]
-      .withFieldRenamed(_.senderAccount, _.accountId)
-      .withFieldConst(_.transferDate, LocalDateTime.now)
-      .withFieldConst(_.status, Status.PENDING)
-      .transform
-

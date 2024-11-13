@@ -10,6 +10,6 @@ case class Account(accountId: Int, bankCode: Int, balance: BigDecimal)
 
 object Account:
   val dbCodec: Codec[Account] =
-    (int4, int4, numeric).tupled.imap {
-      case (accountId, bankCode, balance) => Account(accountId, bankCode, balance)
+    (int4, int4, numeric).tupled.imap { case (accountId, bankCode, balance) =>
+      Account(accountId, bankCode, balance)
     } { account => (account.accountId, account.bankCode, account.balance) }

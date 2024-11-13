@@ -23,7 +23,7 @@ private given Conversion[Int, UserPortNumber] with
 
 private given Conversion[Int, PosInt] with
   def apply(i: Int): PosInt = PosInt.unsafeFrom(i)
-  
+
 private given Conversion[Int, FiniteDuration] with
   def apply(i: Int): FiniteDuration = Duration(i, SECONDS)
 

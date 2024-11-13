@@ -16,6 +16,12 @@ trait AccountService[F[_]]:
   def enterWithdrawal(account: Account, amount: BigDecimal): F[Account]
 
 object AccountService:
+  def makeResource[F[_]: Sync](
+    accountsRepo: AccountsRepo[F]
+  ): Resource[F, AccountService[F]] =
+    Resource.eval:
+      make(accountsRepo)
+
   def make[F[_]: Sync](
     accountsRepo: AccountsRepo[F]
   ): F[AccountService[F]] =
@@ -31,8 +37,3 @@ object AccountService:
             .withFieldComputed(_.balance, _.balance - amount)
             .transform
           accountsRepo.update(updatedAccount) *> updatedAccount.pure[F]
-
-  def makeResource[F[_]: Sync](
-    accountsRepo: AccountsRepo[F]
-  ): Resource[F, AccountService[F]] =
-    Resource.eval(make(accountsRepo))

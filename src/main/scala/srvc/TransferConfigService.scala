@@ -18,11 +18,21 @@ trait TransferConfigService[F[_]] extends Log[F]:
 //  – Include a method for updating these settings, accessible via the /config-transfer endpoint.
 //  – Maintain a single service instance throughout the runtime.
 object TransferConfigService:
+  def makeResource[F[_]: Sync](
+    init: TransferConfig
+  ): Resource[F, TransferConfigService[F]] =
+    Resource.eval(make(init))
+
   def make[F[_]: Sync](init: TransferConfig): F[TransferConfigService[F]] =
     for
       config  <- Ref[F].of(init)
       service <- make(config)
     yield service
+
+  def makeResource[F[_]: Sync](
+    init: Ref[F, TransferConfig]
+  ): Resource[F, TransferConfigService[F]] =
+    Resource.eval(make(init))
 
   def make[F[_]: Sync](
     init: Ref[F, TransferConfig]
@@ -34,16 +44,6 @@ object TransferConfigService:
             init.set(config)
         override def get: F[TransferConfig] =
           init.get
-
-  def makeResource[F[_]: Sync](
-    init: TransferConfig
-  ): Resource[F, TransferConfigService[F]] =
-    Resource.eval(make(init))
-
-  def makeResource[F[_]: Sync](
-    init: Ref[F, TransferConfig]
-  ): Resource[F, TransferConfigService[F]] =
-    Resource.eval(make(init))
 
 object TransferConfigServiceMain extends IOApp: // TODO remove
   import TransferConfigService.*

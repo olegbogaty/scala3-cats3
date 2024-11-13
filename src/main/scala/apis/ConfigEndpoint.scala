@@ -35,21 +35,21 @@ object ConfigEndpoint:
 
   import cats.data.ValidatedNel
   import cats.syntax.all.*
-  private def validateRequest[F[_]: Monad](
-    request: ConfigRequest
-  ): F[Either[ConfigErrorResponse, TransferConfig]] =
-    val tries: ValidatedNel[String, Int] =
-      if (request.tries > 0) request.tries.validNel[String]
-      else "tries should be more then 0".invalidNel
-    val delay: ValidatedNel[String, Int] =
-      if (request.delay > 0) request.tries.validNel[String]
-      else "delay should be more then 0".invalidNel
-    (tries, delay)
-      .mapN((_, _) => TransferConfig.fromRequest(request))
-      .toEither
-      .left
-      .map(nel => ConfigErrorResponse(nel.toList.mkString(", ")))
-      .pure[F]
+  // for test with swagger
+  private val reviewSettings: PublicEndpoint[Unit, Unit, ConfigResponse, Any] =
+    endpoint.get
+      .in("config-transfer")
+      .out(jsonBody[ConfigResponse])
+
+  def makeResource[F[_]: Async](
+    service: TransferConfigService[F]
+  ): Resource[F, List[ServerEndpoint[Any, F]]] =
+    Resource.eval(make(service))
+
+  def make[F[_]: Async](
+    service: TransferConfigService[F]
+  ): F[List[ServerEndpoint[Any, F]]] =
+    List(configTransferLogic(service), reviewSettingsLogic(service)).pure[F]
 
   private def configTransferLogic[F[_]: Monad](
     service: TransferConfigService[F]
@@ -71,11 +71,21 @@ object ConfigEndpoint:
           case Left(error) => Left(error).pure[F]
       yield response
 
-  // for test with swagger
-  private val reviewSettings: PublicEndpoint[Unit, Unit, ConfigResponse, Any] =
-    endpoint.get
-      .in("config-transfer")
-      .out(jsonBody[ConfigResponse])
+  private def validateRequest[F[_]: Monad](
+    request: ConfigRequest
+  ): F[Either[ConfigErrorResponse, TransferConfig]] =
+    val tries: ValidatedNel[String, Int] =
+      if (request.tries > 0) request.tries.validNel[String]
+      else "tries should be more then 0".invalidNel
+    val delay: ValidatedNel[String, Int] =
+      if (request.delay > 0) request.tries.validNel[String]
+      else "delay should be more then 0".invalidNel
+    (tries, delay)
+      .mapN((_, _) => TransferConfig.fromRequest(request))
+      .toEither
+      .left
+      .map(nel => ConfigErrorResponse(nel.toList.mkString(", ")))
+      .pure[F]
 
   private def reviewSettingsLogic[F[_]: Functor](
     service: TransferConfigService[F]
@@ -85,16 +95,6 @@ object ConfigEndpoint:
         ConfigResponse(
           s"config settings: tries = ${transferConfig.tries.value}, delay = ${transferConfig.delay}"
         )
-
-  def make[F[_]: Async](
-    service: TransferConfigService[F]
-  ): F[List[ServerEndpoint[Any, F]]] =
-    List(configTransferLogic(service), reviewSettingsLogic(service)).pure[F]
-
-  def makeResource[F[_]: Async](
-    service: TransferConfigService[F]
-  ): Resource[F, List[ServerEndpoint[Any, F]]] =
-    Resource.eval(make(service))
 
 object ConfigEndpointMain extends IOApp: // TODO remove
   def run(args: List[String]): IO[ExitCode] =

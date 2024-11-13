@@ -16,11 +16,25 @@ import scala.concurrent.duration.*
 
 trait TransferService[F[_]] extends Log[F]:
   def transfer(transfer: Transfer): F[Either[TransferError, Transfer]]
-  def checkTransferStatus(
+  def checkTransferStatus( // TODO refactor and move into transfer check service?
     transactionReference: String
   ): F[Option[Transfer.Status]]
 
 object TransferService:
+  def makeResource[F[_]: Async](
+    accountService: AccountService[F],
+    transferRepo: TransfersRepo[F],
+    paymentGatewayService: PaymentGatewayService[F],
+    transferConfigService: TransferConfigService[F]
+  ): Resource[F, TransferService[F]] =
+    Resource.eval:
+      make(
+        accountService,
+        transferRepo,
+        paymentGatewayService,
+        transferConfigService
+      )
+
   def make[F[_]: Async: Monad](
     accountService: AccountService[F],
     transfersRepo: TransfersRepo[F],
@@ -142,17 +156,3 @@ object TransferService:
                     Left(TransferError(error)).pure[F]
               case None => Left(TransferError("account not found")).pure[F]
           yield result
-
-  def makeResource[F[_]: Async](
-    accountService: AccountService[F],
-    transferRepo: TransfersRepo[F],
-    paymentGatewayService: PaymentGatewayService[F],
-    transferConfigService: TransferConfigService[F]
-  ): Resource[F, TransferService[F]] =
-    Resource.eval:
-      make(
-        accountService,
-        transferRepo,
-        paymentGatewayService,
-        transferConfigService
-      )

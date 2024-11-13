@@ -12,7 +12,13 @@ trait RetryLogicService[F[_]: Temporal]:
     else
       Temporal[F].sleep(delay) *> retry(fa, delay, tries - 1)
 
-  def retry[A, B](fa: F[A], delay: FiniteDuration, tries: Int, onSuccess: F[A] => F[B], onFailure: F[A] => F[B]): F[A] =
+  def retry[A, B](
+    fa: F[A],
+    delay: FiniteDuration,
+    tries: Int,
+    onSuccess: F[A] => F[B],
+    onFailure: F[A] => F[B]
+  ): F[A] =
     if (tries <= 1)
       fa
     else

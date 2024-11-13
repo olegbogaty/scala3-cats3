@@ -11,6 +11,10 @@ import repo.{AccountsRepo, TransfersRepo}
 import srvc.{AccountService, PaymentGatewayService, TransferConfigService, TransferService}
 
 object App extends IOApp:
+  override def run(args: List[String]): IO[ExitCode] =
+    makeDependencies[IO].useForever
+      .as(ExitCode.Success)
+
   private def makeDependencies[F[_]: Async: Temporal: Trace: Network: Console] =
     for
       config                <- Resource.eval(config)
@@ -36,7 +40,3 @@ object App extends IOApp:
         transferEndpoints ++ configEndpoints
       )
     yield server
-
-  override def run(args: List[String]): IO[ExitCode] =
-    makeDependencies[IO].useForever
-      .as(ExitCode.Success)
