@@ -5,6 +5,19 @@ CREATE TABLE IF NOT EXISTS accounts (
     balance NUMERIC DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS transfers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    account_id INT NOT NULL,
+    amount NUMERIC NOT NULL,
+    status VARCHAR NOT NULL,
+    recipient_account INT NOT NULL,
+    recipient_bank_code INT NOT NULL,
+    transaction_reference VARCHAR UNIQUE NOT NULL,
+    transfer_date TIMESTAMP NOT NULL DEFAULT now (),
+    CHECK(status in ('PENDING','SUCCESS','FAILURE'))
+);
+
+-- Pre-populate any necessary data via SQL scripts.
 INSERT INTO accounts (
     account_id,
     bank_code,
@@ -17,18 +30,6 @@ INSERT INTO accounts (
     2222,
     9999,
     1000
-);
-
-CREATE TABLE IF NOT EXISTS transfers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    account_id INT NOT NULL,
-    amount NUMERIC NOT NULL,
-    status VARCHAR NOT NULL,
-    recipient_account INT NOT NULL,
-    recipient_bank_code INT NOT NULL,
-    transaction_reference VARCHAR UNIQUE NOT NULL,
-    transfer_date TIMESTAMP NOT NULL DEFAULT now (),
-    CHECK(status in ('PENDING','SUCCESS','FAILURE'))
 );
 
 INSERT INTO transfers (
