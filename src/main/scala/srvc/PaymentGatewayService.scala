@@ -7,6 +7,7 @@ import data.domain.Transfer
 
 import scala.util.Random
 
+// a mock service that encapsulates interaction with an external payment gateway
 trait PaymentGatewayService[F[_]]:
 // a method returning either success (transfer accepted and pending) or failure (transfer rejected).
   def enterTransfer(transfer: Transfer): F[Either[TransferErrorResponse, TransferResponse]]
