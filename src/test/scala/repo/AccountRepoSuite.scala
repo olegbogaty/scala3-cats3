@@ -1,12 +1,62 @@
 package repo
 
-import cats.effect.{Resource, Sync}
+import cats.effect.{IO, Resource, Sync}
 import cats.implicits.*
 import data.domain.Account
+import munit.CatsEffectSuite
 
 import scala.collection.concurrent.TrieMap
 
-class AccountRepoSuite {}
+class AccountRepoSuite extends CatsEffectSuite:
+
+  private val initialAccount = Account(0, 1, BigDecimal(1000))
+
+  def withRepo(testCode: AccountsRepo[IO] => IO[Unit]): IO[Unit] =
+    AccountRepoSuite.test[IO].flatMap(testCode)
+
+  test("insert should store a new account"):
+    withRepo: repo =>
+      val newAccount = Account(1, 2, BigDecimal(2000))
+      for
+        _         <- repo.insert(newAccount)
+        retrieved <- repo.select(newAccount.accountId)
+      yield assertEquals(retrieved, Some(newAccount))
+
+  test("select should retrieve an existing account"):
+    withRepo: repo =>
+      for retrieved <- repo.select(initialAccount.accountId)
+      yield assertEquals(retrieved, Some(initialAccount))
+
+  test("update should modify an existing account's details"):
+    withRepo: repo =>
+      val updatedAccount = initialAccount.copy(balance = BigDecimal(1500))
+      for
+        _         <- repo.update(updatedAccount)
+        retrieved <- repo.select(initialAccount.accountId)
+      yield assertEquals(retrieved.map(_.balance), Some(BigDecimal(1500)))
+
+  test("update should do nothing if the account does not exist"):
+    withRepo: repo =>
+      val nonExistentAccount = Account(999, 3, BigDecimal(3000))
+      for
+        _         <- repo.update(nonExistentAccount)
+        retrieved <- repo.select(nonExistentAccount.accountId)
+      yield assertEquals(retrieved, None)
+
+  test("delete should remove an existing account"):
+    withRepo: repo =>
+      for
+        _         <- repo.delete(initialAccount)
+        retrieved <- repo.select(initialAccount.accountId)
+      yield assertEquals(retrieved, None)
+
+  test("delete should do nothing if the account does not exist"):
+    withRepo: repo =>
+      val nonExistentAccount = Account(999, 3, BigDecimal(3000))
+      for
+        _         <- repo.delete(nonExistentAccount)
+        retrieved <- repo.select(nonExistentAccount.accountId)
+      yield assertEquals(retrieved, None)
 
 object AccountRepoSuite:
   val testAccount: Account = Account(0, 1, BigDecimal(1000))
