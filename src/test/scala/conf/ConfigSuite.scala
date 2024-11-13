@@ -93,7 +93,7 @@ object ConfigSuite:
     http = httpConfig
   )
 
-  def test[F[_]: Async]: F[AppConfig] = Config.make[F]
-
   def testResource[F[_]: Async]: Resource[F, AppConfig] = Resource.eval:
     test
+
+  def test[F[_]: Async]: F[AppConfig] = Config.make[F]

@@ -2,9 +2,7 @@ package repo
 
 import cats.effect.{Resource, Sync}
 import cats.implicits.*
-import cats.instances.all.*
 import data.domain.Transfer
-import repo.TransfersRepo
 
 import java.time.LocalDateTime
 import scala.collection.concurrent.TrieMap
@@ -21,6 +19,10 @@ object TransfersRepoSuite:
     "transactionReference",
     LocalDateTime.now
   )
+
+  def testResource[F[_]: Sync]: Resource[F, TransfersRepo[F]] =
+    Resource.eval(test)
+
   def test[F[_]: Sync]: F[TransfersRepo[F]] =
     Sync[F].delay:
       new TransfersRepo[F]:
@@ -50,6 +52,3 @@ object TransfersRepoSuite:
             .delay:
               transfers.remove(transfer.transactionReference)
             .void
-
-  def testResource[F[_]: Sync]: Resource[F, TransfersRepo[F]] =
-    Resource.eval(test)

@@ -1,7 +1,6 @@
 package conf
 
-import java.util.Collections
-import java.util.Map as JavaMap
+import java.util.{Collections, Map as JavaMap}
 
 // https://gist.github.com/jaytaylor/770bc416f0dd5954cf0f
 trait EnvHacker { // TODO remove or find another solution

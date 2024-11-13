@@ -2,9 +2,7 @@ package repo
 
 import cats.effect.{Resource, Sync}
 import cats.implicits.*
-import cats.instances.all.*
 import data.domain.Account
-import repo.AccountsRepo
 
 import scala.collection.concurrent.TrieMap
 
@@ -12,6 +10,10 @@ class AccountRepoSuite {}
 
 object AccountRepoSuite:
   val testAccount: Account = Account(0, 1, BigDecimal(1000))
+
+  def testResource[F[_]: Sync]: Resource[F, AccountsRepo[F]] =
+    Resource.eval(test)
+
   def test[F[_]: Sync]: F[AccountsRepo[F]] =
     Sync[F].delay:
       new AccountsRepo[F]:
@@ -39,6 +41,3 @@ object AccountRepoSuite:
             .delay:
               accounts.remove(account.accountId)
             .void
-
-  def testResource[F[_]: Sync]: Resource[F, AccountsRepo[F]] =
-    Resource.eval(test)

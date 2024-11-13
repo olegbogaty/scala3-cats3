@@ -11,15 +11,15 @@ import scala.concurrent.duration.given
 
 class TransferConfigServiceSuite extends CatsEffectSuite:
 
-  private def withConfig[F[_]: Async]: F[TransferConfig] =
-    for conf <- ConfigSuite.test
-    yield conf.tc
-
   def withService[F[_]: Async]: F[TransferConfigService[F]] =
     for
       conf <- withConfig
       srvc <- TransferConfigServiceSuite.test(conf)
     yield srvc
+
+  private def withConfig[F[_]: Async]: F[TransferConfig] =
+    for conf <- ConfigSuite.test
+    yield conf.tc
 
   test("get should return the initial configuration"):
     withService[IO].flatMap: srvc =>
