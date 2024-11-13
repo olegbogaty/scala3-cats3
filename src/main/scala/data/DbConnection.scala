@@ -2,7 +2,7 @@ package data
 
 import cats.effect.std.Console
 import cats.effect.{Resource, Temporal}
-import conf.DbConfig
+import conf.Config.DbConfig
 import fs2.io.net.Network
 import natchez.Trace
 import skunk.Session

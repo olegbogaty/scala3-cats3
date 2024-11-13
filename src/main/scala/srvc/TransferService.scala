@@ -84,7 +84,9 @@ object TransferService:
                   .withFieldConst(_.status, Status.FAILURE)
                   .transform
                 for
-                  _ <- log.info(s"transfer rejected: ${error.msg}")
+                  _ <- log.info(
+                    s"transfer failed: rejected by payment gateway service"
+                  )
                   _ <- transfersRepo.insert(updatedTransfer)
                 yield Left(TransferError(s"transfer failed: ${error.msg}"))
           yield result

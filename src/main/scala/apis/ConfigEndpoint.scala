@@ -4,7 +4,8 @@ import apis.model.{ConfigErrorResponse, ConfigRequest, ConfigResponse}
 import cats.effect.kernel.Resource
 import cats.effect.{Async, ExitCode, IO, IOApp}
 import cats.{Functor, Monad}
-import conf.{TransferConfig, config}
+import conf.Config
+import conf.Config.TransferConfig
 import http.HttpServer
 import io.circe.generic.auto.*
 import srvc.TransferConfigService
@@ -99,7 +100,7 @@ object ConfigEndpoint:
 object ConfigEndpointMain extends IOApp: // TODO remove
   def run(args: List[String]): IO[ExitCode] =
     (for
-      config      <- config[IO]
+      config      <- Config.make[IO]
       _           <- IO.println(s"CONFIG $config")
       tcService   <- TransferConfigService.make[IO](config.tc)
       tcConfigOld <- tcService.get

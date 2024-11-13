@@ -1,6 +1,7 @@
 package conf
 
 import apis.model.ConfigRequest
+import cats.effect.kernel.Resource
 import cats.effect.{Async, IO, IOApp}
 import cats.implicits.given
 import cats.syntax.all.*
@@ -15,77 +16,81 @@ import eu.timepit.refined.types.string.NonEmptyString
 
 import scala.concurrent.duration.*
 
-private given Conversion[String, NonEmptyString] with
-  def apply(s: String): NonEmptyString = NonEmptyString.unsafeFrom(s)
+object Config:
+  def makeResource[F[_]: Async]: Resource[F, AppConfig] = Resource.eval:
+    make
 
-private given Conversion[Int, UserPortNumber] with
-  def apply(i: Int): UserPortNumber = UserPortNumber.unsafeFrom(i)
+  def make[F[_]: Async]: F[AppConfig] = appConfig.load
 
-private given Conversion[Int, PosInt] with
-  def apply(i: Int): PosInt = PosInt.unsafeFrom(i)
+  private def appConfig[F[_]]: ConfigValue[F, AppConfig] =
+    (dbConfig, transferConfig, httpConfig).parMapN(AppConfig.apply)
 
-private given Conversion[Int, FiniteDuration] with
-  def apply(i: Int): FiniteDuration = Duration(i, SECONDS)
+  private def dbConfig[F[_]]: ConfigValue[F, DbConfig] =
+    (
+      env("DATABASE_HOST").as[NonEmptyString].default("localhost"),
+      env("DATABASE_PORT").as[UserPortNumber].default(5454),
+      env("DATABASE_USER").as[NonEmptyString].default("oradian"),
+      env("DATABASE_PASS").as[NonEmptyString].default("oradian"),
+      env("DATABASE_BASE").as[NonEmptyString].default("oradian")
+    ).parMapN(DbConfig.apply)
 
-final case class DbConfig(
-  host: NonEmptyString,
-  port: UserPortNumber,
-  user: NonEmptyString,
-  pass: NonEmptyString,
-  base: NonEmptyString
-)
+  private def transferConfig[F[_]]: ConfigValue[F, TransferConfig] =
+    (
+      env("TRANSFER_CONFIG_TRIES").as[PosInt].default(10),
+      env("TRANSFER_CONFIG_DELAY").as[FiniteDuration].default(10.seconds)
+    ).parMapN(TransferConfig.apply)
 
-final case class TransferConfig(
-  tries: PosInt,
-  delay: FiniteDuration
-)
+  private def httpConfig[F[_]]: ConfigValue[F, HttpConfig] =
+    serverConfig.map(HttpConfig.apply)
 
-object TransferConfig:
-  def fromRequest(request: ConfigRequest): TransferConfig =
-    TransferConfig(request.tries, request.delay)
+  private def serverConfig[F[_]]: ConfigValue[F, ServerConfig] =
+    (
+      env("HTTP_SERVER_HOST").as[NonEmptyString].default("localhost"),
+      env("HTTP_SERVER_PORT").as[UserPortNumber].default(8080)
+    ).parMapN(ServerConfig.apply)
 
-final case class ServerConfig(
-  host: NonEmptyString,
-  port: UserPortNumber
-)
+  final case class DbConfig(
+    host: NonEmptyString,
+    port: UserPortNumber,
+    user: NonEmptyString,
+    pass: NonEmptyString,
+    base: NonEmptyString
+  )
 
-final case class HttpConfig(server: ServerConfig)
+  final case class TransferConfig(
+    tries: PosInt,
+    delay: FiniteDuration
+  )
 
-final case class AppConfig(
-  db: DbConfig,
-  tc: TransferConfig,
-  http: HttpConfig
-)
+  final case class ServerConfig(
+    host: NonEmptyString,
+    port: UserPortNumber
+  )
 
-private def dbConfig[F[_]]: ConfigValue[F, DbConfig] =
-  (
-    env("DATABASE_HOST").as[NonEmptyString].default("localhost"),
-    env("DATABASE_PORT").as[UserPortNumber].default(5454),
-    env("DATABASE_USER").as[NonEmptyString].default("oradian"),
-    env("DATABASE_PASS").as[NonEmptyString].default("oradian"),
-    env("DATABASE_BASE").as[NonEmptyString].default("oradian")
-  ).parMapN(DbConfig.apply)
+  final case class HttpConfig(server: ServerConfig)
 
-private def transferConfig[F[_]]: ConfigValue[F, TransferConfig] =
-  (
-    env("TRANSFER_CONFIG_TRIES").as[PosInt].default(10),
-    env("TRANSFER_CONFIG_DELAY").as[FiniteDuration].default(10.seconds)
-  ).parMapN(TransferConfig.apply)
+  final case class AppConfig(
+    db: DbConfig,
+    tc: TransferConfig,
+    http: HttpConfig
+  )
 
-private def serverConfig[F[_]]: ConfigValue[F, ServerConfig] =
-  (
-    env("HTTP_SERVER_HOST").as[NonEmptyString].default("localhost"),
-    env("HTTP_SERVER_PORT").as[UserPortNumber].default(8080)
-  ).parMapN(ServerConfig.apply)
+  object TransferConfig:
+    def fromRequest(request: ConfigRequest): TransferConfig =
+      TransferConfig(request.tries, request.delay)
 
-private def httpConfig[F[_]]: ConfigValue[F, HttpConfig] =
-  serverConfig.map(HttpConfig.apply)
+  private given Conversion[String, NonEmptyString] with
+    def apply(s: String): NonEmptyString = NonEmptyString.unsafeFrom(s)
 
-private def appConfig[F[_]]: ConfigValue[F, AppConfig] =
-  (dbConfig, transferConfig, httpConfig).parMapN(AppConfig.apply)
+  private given Conversion[Int, UserPortNumber] with
+    def apply(i: Int): UserPortNumber = UserPortNumber.unsafeFrom(i)
 
-def config[F[_]: Async]: F[AppConfig] = appConfig.load
+  private given Conversion[Int, PosInt] with
+    def apply(i: Int): PosInt = PosInt.unsafeFrom(i)
 
-object Config extends IOApp.Simple: // TODO remove
+  private given Conversion[Int, FiniteDuration] with
+    def apply(i: Int): FiniteDuration = Duration(i, SECONDS)
+
+object ConfigMain extends IOApp.Simple: // TODO remove
   def run: IO[Unit] =
-    config[IO].flatMap(IO.println)
+    Config.make[IO].flatMap(IO.println)

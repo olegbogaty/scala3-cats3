@@ -113,7 +113,7 @@ object TransferEndpointMain extends IOApp:
       IO(Some(Transfer.Status.PENDING))
   def run(args: List[String]): IO[ExitCode] =
     (for
-      config    <- conf.config[IO]
+      config    <- conf.Config.make[IO]
       endpoints <- TransferEndpoint.make[IO](mockService)
       _ <- HttpServer
         .makeResource[IO](config.http.server, endpoints)

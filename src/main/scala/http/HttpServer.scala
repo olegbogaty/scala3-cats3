@@ -5,7 +5,7 @@ import cats.effect.*
 import cats.effect.kernel.Resource
 import cats.effect.std.{Console, Dispatcher}
 import cats.syntax.all.*
-import conf.ServerConfig
+import conf.Config.ServerConfig
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.netty.cats.{NettyCatsServer, NettyCatsServerBinding}
 import sttp.tapir.swagger.bundle.SwaggerInterpreter

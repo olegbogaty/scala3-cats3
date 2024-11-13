@@ -3,7 +3,8 @@ package srvc
 import cats.*
 import cats.effect.*
 import cats.syntax.all.*
-import conf.{TransferConfig, config}
+import conf.Config
+import conf.Config.TransferConfig
 import eu.timepit.refined.types.numeric.PosInt
 import logs.Log
 
@@ -29,11 +30,6 @@ object TransferConfigService:
       service <- make(config)
     yield service
 
-  def makeResource[F[_]: Sync](
-    init: Ref[F, TransferConfig]
-  ): Resource[F, TransferConfigService[F]] =
-    Resource.eval(make(init))
-
   def make[F[_]: Sync](
     init: Ref[F, TransferConfig]
   ): F[TransferConfigService[F]] =
@@ -44,6 +40,11 @@ object TransferConfigService:
             init.set(config)
         override def get: F[TransferConfig] =
           init.get
+
+  def makeResource[F[_]: Sync](
+    init: Ref[F, TransferConfig]
+  ): Resource[F, TransferConfigService[F]] =
+    Resource.eval(make(init))
 
 object TransferConfigServiceMain extends IOApp: // TODO remove
   import TransferConfigService.*
@@ -56,7 +57,7 @@ object TransferConfigServiceMain extends IOApp: // TODO remove
 
   def run(args: List[String]): IO[ExitCode] =
     (for
-      config     <- config[IO]
+      config     <- Config.make[IO]
       tcService  <- make[IO](config.tc)
       initConfig <- tcService.get
       _          <- IO.println(initConfig)
