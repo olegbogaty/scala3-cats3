@@ -8,7 +8,7 @@ import cats.effect.{Async, ExitCode, IO, IOApp}
 import data.domain.Transfer
 import http.HttpServer
 import io.circe.generic.auto.*
-import srvc.TransfersService
+import srvc.TransferService
 import srvc.model.TransferError
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
@@ -51,7 +51,7 @@ object TransferEndpoint:
       .pure[F]
 
   private def enterTransferLogic[F[_]: Monad](
-    service: TransfersService[F]
+    service: TransferService[F]
   ): ServerEndpoint[Any, F] =
     enterTransfer.serverLogic: request =>
       for
@@ -80,7 +80,7 @@ object TransferEndpoint:
       .out(jsonBody[TransferResponse])
 
   private def checkTransferStatusLogic[F[_] : Functor](
-    service: TransfersService[F]
+    service: TransferService[F]
   ): ServerEndpoint[Any, F] =
     checkTransferStatus.serverLogicSuccess: request =>
       service.checkTransferStatus(request.transactionReference).map: transferStatus =>
@@ -89,18 +89,18 @@ object TransferEndpoint:
         )
 
   def make[F[_]: Async](
-    service: TransfersService[F]
+    service: TransferService[F]
   ): F[List[ServerEndpoint[Any, F]]] =
     List(enterTransferLogic(service), checkTransferStatusLogic(service))
       .pure[F]
 
   def makeResource[F[_]: Async](
-    service: TransfersService[F]
+    service: TransferService[F]
   ): Resource[F, List[ServerEndpoint[Any, F]]] =
     Resource.eval(make(service))
 
 object TransferEndpointMain extends IOApp:
-  private val mockService = new TransfersService[IO]:
+  private val mockService = new TransferService[IO]:
     override def transfer(
       transfer: Transfer
     ): IO[Either[TransferError, Transfer]] = IO(Left(TransferError("error")))

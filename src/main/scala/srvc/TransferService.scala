@@ -8,23 +8,27 @@ import cats.implicits.*
 import cats.syntax.applicative.*
 import data.domain.Transfer.Status
 import data.domain.{Account, Transfer}
-import repo.{AccountsRepo, TransfersRepo}
+import logs.Log
+import repo.TransfersRepo
 import srvc.model.TransferError
 
-trait TransfersService[F[_]]:
+import scala.concurrent.duration.*
+
+trait TransferService[F[_]] extends Log[F]:
   def transfer(transfer: Transfer): F[Either[TransferError, Transfer]]
   def checkTransferStatus(
     transactionReference: String
   ): F[Option[Transfer.Status]]
 
-object TransfersService:
+object TransferService:
   def make[F[_]: Async: Monad](
     accountService: AccountService[F],
     transfersRepo: TransfersRepo[F],
-    paymentGatewayService: PaymentGatewayService[F]
-  ): F[TransfersService[F]] =
+    paymentGatewayService: PaymentGatewayService[F],
+    transferConfigService: TransferConfigService[F]
+  ): F[TransferService[F]] =
     Sync[F].delay:
-      new TransfersService[F]:
+      new TransferService[F]:
         private def checkTransfer(
           account: Account,
           transfer: Transfer
@@ -53,14 +57,21 @@ object TransfersService:
                 for
                   _ <- accountService.enterWithdrawal(account, transfer.amount)
                   _ <- transfersRepo.insert(transfer)
-                  _ <- checkTransferStatus(transfer).start
+                  config <- transferConfigService.get
+                  _ <- checkTransferStatus(
+                    transfer,
+                    config.tries.value,
+                    config.delay
+                  ).start
                 yield Right(transfer)
               case Left(error) =>
                 val updatedTransfer = transfer
                   .into[Transfer]
                   .withFieldConst(_.status, Status.FAILURE)
                   .transform
-                for _ <- transfersRepo.insert(updatedTransfer)
+                for
+                  _ <- log.info(s"transfer rejected: ${error.msg}")
+                  _ <- transfersRepo.insert(updatedTransfer)
                 yield Left(TransferError(s"transfer failed: ${error.msg}"))
           yield result
 
@@ -69,52 +80,55 @@ object TransfersService:
         ): F[Option[Transfer.Status]] =
           for
             transfer <- transfersRepo.select(transactionReference)
-            result   <- transfer.traverse: transfer =>
-              transfer.status match
-                case Transfer.Status.PENDING =>
-                  checkTransferStatus(transfer)
-                case status => status.pure[F]
+            result <- transfer.traverse: transfer =>
+              transfer.status.pure[F]
           yield result
 
-        private def handleTransferFailure(transfer: Transfer): F[Transfer.Status] =
+        private def handleTransferFailure(transfer: Transfer): F[Unit] =
           val updatedTransfer = transfer
             .into[Transfer]
             .withFieldConst(_.status, Status.FAILURE)
             .transform
           for
-            _ <- transfersRepo.update(updatedTransfer)
+            _       <- transfersRepo.update(updatedTransfer)
             account <- accountService.lookup(updatedTransfer.accountId)
             _ <- account.traverse:
               accountService.enterWithdrawal(_, -transfer.amount)
-          yield Transfer.Status.FAILURE
+          yield ()
 
-        private def handleTransferSuccess(transfer: Transfer): F[Transfer.Status] =
+        private def handleTransferSuccess(transfer: Transfer): F[Unit] =
           val updatedTransfer = transfer
             .into[Transfer]
             .withFieldConst(_.status, Status.SUCCESS)
             .transform
           for _ <- transfersRepo.update(updatedTransfer)
-            yield Transfer.Status.SUCCESS
+          yield ()
 
         private def checkTransferStatus(
-          transfer: Transfer
-        ): F[Transfer.Status] =
+          transfer: Transfer,
+          tries: Int,
+          delay: FiniteDuration
+        ): F[Unit] = {
           for
+            _ <- log.info(s"checking transfer status, $tries tries left")
             status <- paymentGatewayService.checkTransferStatus(
               transfer.transactionReference
             )
-            result <- status match
-              case Right(transferStatus) =>
-                Transfer.Status.valueOf(transferStatus.msg) match
-                  case Transfer.Status.FAILURE =>
+            _ <- log.info(s"transfer status: ${status.msg}")
+            result <- Transfer.Status.valueOf(status.msg) match
+              case Transfer.Status.FAILURE =>
+                handleTransferFailure(transfer)
+              case Transfer.Status.SUCCESS =>
+                handleTransferSuccess(transfer)
+              case Transfer.Status.PENDING =>
+                if (tries <= 0)
+                  log.info("0 tries left, rollback the transfer") *>
                     handleTransferFailure(transfer)
-                  case Transfer.Status.SUCCESS =>
-                    handleTransferSuccess(transfer)
-                  case Transfer.Status.PENDING =>
-                    Transfer.Status.PENDING.pure[F]
-              case Left(errorResponse) =>
-                Transfer.Status.FAILURE.pure[F]
-          yield result
+                else
+                  Temporal[F].sleep(delay) *>
+                    checkTransferStatus(transfer, tries - 1, delay)
+          yield ()
+        }
 
         def transfer(transfer: Transfer): F[Either[TransferError, Transfer]] =
           for
@@ -132,7 +146,13 @@ object TransfersService:
   def makeResource[F[_]: Async](
     accountService: AccountService[F],
     transferRepo: TransfersRepo[F],
-    paymentGatewayService: PaymentGatewayService[F]
-  ): Resource[F, TransfersService[F]] =
+    paymentGatewayService: PaymentGatewayService[F],
+    transferConfigService: TransferConfigService[F]
+  ): Resource[F, TransferService[F]] =
     Resource.eval:
-      make(accountService, transferRepo, paymentGatewayService)
+      make(
+        accountService,
+        transferRepo,
+        paymentGatewayService,
+        transferConfigService
+      )

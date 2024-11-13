@@ -8,7 +8,7 @@ import http.HttpServer
 import natchez.Trace
 import natchez.Trace.Implicits.noop
 import repo.{AccountsRepo, TransfersRepo}
-import srvc.{AccountService, PaymentGatewayService, TransferConfigService, TransfersService}
+import srvc.{AccountService, PaymentGatewayService, TransferConfigService, TransferService}
 
 object App extends IOApp:
   private def makeDependencies[F[_]: Async: Temporal: Trace: Network: Console] =
@@ -23,10 +23,11 @@ object App extends IOApp:
         transferConfig
       )
       accountService <- AccountService.makeResource(accountRepo)
-      transfersService <- TransfersService.makeResource(
+      transfersService <- TransferService.makeResource(
         accountService,
         transferRepo,
-        paymentGatewayService
+        paymentGatewayService,
+        transferConfigService
       )
       transferEndpoints <- TransferEndpoint.makeResource(transfersService)
       configEndpoints   <- ConfigEndpoint.makeResource(transferConfigService)
