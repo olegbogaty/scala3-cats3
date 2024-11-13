@@ -1,9 +1,14 @@
 package conf
 
+import cats.effect.kernel.Resource
 import cats.effect.{Async, IO}
-import cats.effect.kernel.{Resource, Sync}
-import conf.Config.AppConfig
+import conf.Config.{AppConfig, DbConfig, HttpConfig, ServerConfig, TransferConfig}
+import eu.timepit.refined.types.all.NonEmptyString
+import eu.timepit.refined.types.net.UserPortNumber
+import eu.timepit.refined.types.numeric.PosInt
 import munit.CatsEffectSuite
+
+import scala.concurrent.duration.*
 
 //import scala.jdk.CollectionConverters.*
 
@@ -41,26 +46,54 @@ class ConfigSuite extends CatsEffectSuite, EnvHacker:
 //    }
 //  }
 
-  private val testEnv: Map[String, String] = Map.newBuilder.addAll(List(
-    "DATABASE_HOST"         -> "localhost",
-    "DATABASE_HOST"         -> "5454",
-    "DATABASE_USER"         -> "oradian",
-    "DATABASE_PASS"         -> "oradian",
-    "DATABASE_BASE"         -> "oradian",
-    "TRANSFER_CONFIG_TRIES" -> "10",
-    "TRANSFER_CONFIG_DELAY" -> "10",
-    "SERVER_HOST"           -> "localhost",
-    "SERVER_PORT"           -> "8080"
-  )).result()
+  private val testEnv: Map[String, String] = Map.newBuilder
+    .addAll(
+      List(
+        "DATABASE_HOST"         -> "localhost",
+        "DATABASE_HOST"         -> "5454",
+        "DATABASE_USER"         -> "oradian",
+        "DATABASE_PASS"         -> "oradian",
+        "DATABASE_BASE"         -> "oradian",
+        "TRANSFER_CONFIG_TRIES" -> "10",
+        "TRANSFER_CONFIG_DELAY" -> "10",
+        "SERVER_HOST"           -> "localhost",
+        "SERVER_PORT"           -> "8080"
+      )
+    )
+    .result()
 
-  test("load config") {
-    import ConfigSuite.*
-    // setEnv(testEnv.asJava)
-    make[IO].flatMap(IO.println)
-  }
+  test("load and compare app config"):
+    ConfigSuite
+      .test[IO]
+      .flatMap: conf =>
+        IO(conf).assertEquals(ConfigSuite.appConfig)
 
 object ConfigSuite:
-  def make[F[_]: Async]: F[AppConfig] = Config.make[F]
+  val dbConfig: DbConfig = DbConfig(
+    host = NonEmptyString.unsafeFrom("localhost"),
+    port = UserPortNumber.unsafeFrom(5454),
+    user = NonEmptyString.unsafeFrom("oradian"),
+    pass = NonEmptyString.unsafeFrom("oradian"),
+    base = NonEmptyString.unsafeFrom("oradian")
+  )
 
-  def makeResource[F[_] : Async]: Resource[F, AppConfig] = Resource.eval:
-    make
+  val transferConfig: TransferConfig =
+    TransferConfig(tries = PosInt.unsafeFrom(10), delay = 10.seconds)
+
+  val serverConfig: ServerConfig = ServerConfig(
+    host = NonEmptyString.unsafeFrom("localhost"),
+    port = UserPortNumber.unsafeFrom(8080)
+  )
+
+  val httpConfig: HttpConfig = HttpConfig(server = serverConfig)
+
+  val appConfig: AppConfig = AppConfig(
+    db = dbConfig,
+    tc = transferConfig,
+    http = httpConfig
+  )
+
+  def test[F[_]: Async]: F[AppConfig] = Config.make[F]
+
+  def testResource[F[_]: Async]: Resource[F, AppConfig] = Resource.eval:
+    test
