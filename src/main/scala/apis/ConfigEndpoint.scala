@@ -96,18 +96,3 @@ object ConfigEndpoint:
         ConfigResponse(
           s"config settings: tries = ${transferConfig.tries.value}, delay = ${transferConfig.delay}"
         )
-
-object ConfigEndpointMain extends IOApp: // TODO remove
-  def run(args: List[String]): IO[ExitCode] =
-    (for
-      config      <- Config.make[IO]
-      _           <- IO.println(s"CONFIG $config")
-      tcService   <- TransferConfigService.make[IO](config.tc)
-      tcConfigOld <- tcService.get
-      _           <- IO.println(s"TRANSER SERVICE GET: ${tcConfigOld}")
-      endpoints   <- ConfigEndpoint.make[IO](tcService)
-      _ <- HttpServer
-        .makeResource[IO](config.http.server, endpoints)
-        .use(_.serve() *> IO.never)
-    yield ())
-      .as(ExitCode.Success)

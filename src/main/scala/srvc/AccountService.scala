@@ -6,7 +6,7 @@ import cats.implicits.*
 import cats.syntax.all.*
 import data.domain.Account
 import io.scalaland.chimney.dsl.*
-import repo.{AccountsRepo, TransfersRepo}
+import repo.AccountsRepo
 
 //  The account service should enable account lookup by number, balance querying, and balance updating
 //  through enterWithdrawal. Since the focus is on outgoing transfers you can omit deposit methods.

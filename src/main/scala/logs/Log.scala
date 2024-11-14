@@ -5,5 +5,5 @@ import scribe.Scribe
 import scribe.cats.*
 
 trait Log[F[_]: Sync] { self =>
-  val log = summon[Scribe[F]]
+  val log: Scribe[F] = summon[Scribe[F]]
 }

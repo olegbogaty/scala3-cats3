@@ -5,7 +5,6 @@ import cats.effect.*
 import cats.syntax.all.*
 import conf.Config
 import conf.Config.TransferConfig
-import eu.timepit.refined.types.numeric.PosInt
 import logs.Log
 
 trait TransferConfigService[F[_]] extends Log[F]:
@@ -45,23 +44,3 @@ object TransferConfigService:
     init: Ref[F, TransferConfig]
   ): Resource[F, TransferConfigService[F]] =
     Resource.eval(make(init))
-
-object TransferConfigServiceMain extends IOApp: // TODO remove
-  import TransferConfigService.*
-
-  import scala.concurrent.duration.*
-  private val newConfig = TransferConfig(
-    tries = PosInt.unsafeFrom(123),
-    delay = 18.seconds
-  )
-
-  def run(args: List[String]): IO[ExitCode] =
-    (for
-      config     <- Config.make[IO]
-      tcService  <- make[IO](config.tc)
-      initConfig <- tcService.get
-      _          <- IO.println(initConfig)
-      _          <- tcService.set(newConfig)
-      initConfig <- tcService.get
-      _          <- IO.println(initConfig)
-    yield tcService).as(ExitCode.Success)

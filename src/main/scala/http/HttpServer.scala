@@ -7,7 +7,7 @@ import cats.effect.std.{Console, Dispatcher}
 import cats.syntax.all.*
 import conf.Config.ServerConfig
 import sttp.tapir.server.ServerEndpoint
-import sttp.tapir.server.netty.cats.{NettyCatsServer, NettyCatsServerBinding}
+import sttp.tapir.server.netty.cats.NettyCatsServer
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
 trait HttpServer[F[_]]:

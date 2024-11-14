@@ -3,7 +3,6 @@ package repo
 import cats.effect.*
 import cats.syntax.all.*
 import data.domain.Account
-import natchez.Trace.Implicits.noop
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
@@ -67,28 +66,3 @@ object AccountsRepo:
 
         override def delete(account: Account): F[Unit] =
           session.execute(deleteOne)(account.accountId).void
-
-object AccountRepoMain extends IOApp: // TODO remove
-  val session: Resource[IO, Session[IO]] =
-    Session.single( // (2)
-      host = "localhost",
-      port = 5454,
-      user = "oradian",
-      database = "oradian",
-      password = Some("oradian")
-    )
-
-  def run(args: List[String]): IO[ExitCode] =
-    val account = Account(123, 321, BigDecimal(100.25))
-    session
-      .flatMap(AccountsRepo.makeResource[IO](_))
-      .use: repo => // (3)
-        for
-          _      <- repo.delete(account)
-          _      <- repo.insert(account)
-          option <- repo.select(account.accountId)
-          _      <- IO.println(option)
-          _      <- repo.update(account.copy(balance = account.balance - 50))
-          option <- repo.select(account.accountId)
-          _      <- IO.println(option)
-        yield ExitCode.Success

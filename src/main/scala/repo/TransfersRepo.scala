@@ -5,7 +5,6 @@ import cats.syntax.all.*
 import data.domain.Transfer
 import data.domain.Transfer.Status
 import data.domain.Transfer.Status.codec
-import natchez.Trace.Implicits.noop
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
@@ -83,36 +82,3 @@ object TransfersRepo:
 
         override def delete(transfer: Transfer): F[Unit] =
           session.execute(deleteOne)(transfer.transactionReference).void
-
-object TransfersRepoMain extends IOApp: // TODO remove
-  val session: Resource[IO, Session[IO]] =
-    Session.single( // (2)
-      host = "localhost",
-      port = 5454,
-      user = "oradian",
-      database = "oradian",
-      password = Some("oradian")
-    )
-
-  def run(args: List[String]): IO[ExitCode] =
-    val transfer = Transfer(
-      1,
-      BigDecimal(100.25),
-      Transfer.Status.PENDING,
-      2,
-      3,
-      "ref",
-      LocalDateTime.now
-    )
-    session
-      .flatMap(TransfersRepo.makeResource[IO](_))
-      .use: repo => // (3)
-        for
-          _      <- repo.delete(transfer)
-          _      <- repo.insert(transfer)
-          option <- repo.select(transfer.transactionReference)
-          _      <- IO.println(option)
-          _      <- repo.update(transfer.copy(status = Transfer.Status.SUCCESS))
-          option <- repo.select(transfer.transactionReference)
-          _      <- IO.println(option)
-        yield ExitCode.Success

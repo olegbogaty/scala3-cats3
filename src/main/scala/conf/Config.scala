@@ -9,7 +9,6 @@ import ciris.*
 import ciris.refined.*
 import eu.timepit.refined.*
 import eu.timepit.refined.api.*
-import eu.timepit.refined.auto.*
 import eu.timepit.refined.types.all.*
 import eu.timepit.refined.types.net.UserPortNumber
 import eu.timepit.refined.types.string.NonEmptyString
@@ -90,7 +89,3 @@ object Config:
 
   private given Conversion[Int, FiniteDuration] with
     def apply(i: Int): FiniteDuration = Duration(i, SECONDS)
-
-object ConfigMain extends IOApp.Simple: // TODO remove
-  def run: IO[Unit] =
-    Config.make[IO].flatMap(IO.println)

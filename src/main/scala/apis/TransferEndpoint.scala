@@ -101,22 +101,3 @@ object TransferEndpoint:
           TransferResponse(
             s"transfer status: $transferStatus"
           )
-
-object TransferEndpointMain extends IOApp:
-  private val mockService = new TransferService[IO]:
-    override def transfer(
-      transfer: Transfer
-    ): IO[Either[TransferError, Transfer]] = IO(Left(TransferError("error")))
-    override def checkTransferStatus(
-      transactionReference: String
-    ): IO[Option[Transfer.Status]] =
-      IO(Some(Transfer.Status.PENDING))
-  def run(args: List[String]): IO[ExitCode] =
-    (for
-      config    <- conf.Config.make[IO]
-      endpoints <- TransferEndpoint.make[IO](mockService)
-      _ <- HttpServer
-        .makeResource[IO](config.http.server, endpoints)
-        .use(_.serve() *> IO.never)
-    yield ())
-      .as(ExitCode.Success)
