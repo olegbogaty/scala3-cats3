@@ -78,7 +78,7 @@ object TransfersRepoSuite:
     Transfer.Status.PENDING,
     2, // recipientAccount
     3, // recipientBankCode
-    "transactionReference",
+    "test-transaction-ref",
     LocalDateTime.now
   )
 
