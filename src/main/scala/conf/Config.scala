@@ -78,6 +78,9 @@ object Config:
     def fromRequest(request: ConfigRequest): TransferConfig =
       TransferConfig(request.tries, request.delay)
 
+    def unsafeFrom(tries: Int, delay: Int): TransferConfig =
+      TransferConfig(tries, delay)
+
   private given Conversion[String, NonEmptyString] with
     def apply(s: String): NonEmptyString = NonEmptyString.unsafeFrom(s)
 
