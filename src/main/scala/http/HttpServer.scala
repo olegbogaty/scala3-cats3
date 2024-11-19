@@ -7,11 +7,11 @@ import cats.effect.std.{Console, Dispatcher}
 import cats.syntax.all.*
 import conf.Config.ServerConfig
 import sttp.tapir.server.ServerEndpoint
-import sttp.tapir.server.netty.cats.NettyCatsServer
+import sttp.tapir.server.netty.cats.{NettyCatsServer, NettyCatsServerBinding}
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
 trait HttpServer[F[_]]:
-  def serve(): F[Unit]
+  def serve(): F[NettyCatsServerBinding[F]]
 
 object HttpServer:
   def makeResource[F[_]: Async: Console](
@@ -25,9 +25,9 @@ object HttpServer:
           _ <- Console[F].println(
             s"Go to http://localhost:${config.port.value}/docs to open SwaggerUI"
           )
-          _ <- server.start()
+          binding <- server.start()
         yield new HttpServer[F]:
-          override def serve(): F[Unit] = ().pure[F]
+          override def serve(): F[NettyCatsServerBinding[F]] = binding.pure[F]
     yield handle
 
   private def bindServer[F[_]: Async](
