@@ -53,7 +53,7 @@ class ConfigEndpointSuite extends CatsEffectSuite:
       }
     yield ()
 
-  test("PUT /config should update the configuration"):
+  test("POST /config-transfer should update the configuration"):
     val newConfig = ConfigRequest(tries = 10, delay = 5)
     for
       service <- TransferConfigService.make[IO](initialConfig)
