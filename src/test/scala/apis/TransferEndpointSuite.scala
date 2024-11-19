@@ -102,9 +102,14 @@ class TransferEndpointSuite extends CatsEffectSuite:
           .send(backend)
         IO {
           assertEquals(res.code, StatusCode.BadRequest)
-//          assert(
-//            res.body.left.exists(_.contains("amount should be more than 0"))
-//          )
+          assert(res.body.isLeft)
+          println(res.body.left.map(_.getMessage))
+          assert(
+            res.body.left.get.getMessage // didn't find the right way to check exception
+              .contains(
+                "amount should be more then 0, sender account number should not be a recipient account number"
+              )
+          )
         }
       }
     yield ()
