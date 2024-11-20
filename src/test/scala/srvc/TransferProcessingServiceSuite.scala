@@ -127,7 +127,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
       _ <- IO(
         assertEquals(
           status,
-          Some(Transfer.Status.FAILURE), //
+          Some(Transfer.Status.PENDING), //
           "Transfer should remain pending"
         )
       )
