@@ -18,6 +18,10 @@ import sttp.model.StatusCode
 
 class ConfigEndpointSuite extends CatsEffectSuite:
 
+  val httpServer: IOFixture[HttpServer[IO]] = ResourceSuiteLocalFixture(
+    "http-server",
+    makeServer[IO]
+  )
   private val httpServerPort = UserPortNumber.unsafeFrom(
     8888
   ) // CANNOT USE FIXTURE FOR SUITE, NEED TO CHANGE
@@ -34,11 +38,6 @@ class ConfigEndpointSuite extends CatsEffectSuite:
         routes
       )
     yield server
-
-  val httpServer: IOFixture[HttpServer[IO]] = ResourceSuiteLocalFixture(
-    "http-server",
-    makeServer[IO]
-  )
 
   override def munitFixtures: Seq[IOFixture[HttpServer[IO]]] = List(httpServer)
 

@@ -17,6 +17,34 @@ trait TransferProcessingService[F[_]]:
   def checkTransferStatus(transferRef: String): F[Option[Transfer.Status]]
 
 object TransferProcessingService:
+  def makeResource[F[_]: Concurrent: Temporal](
+    gatewayService: PaymentGatewayService[F],
+    accountService: AccountService[F],
+    transfersRepo: TransfersRepo[F],
+    configService: TransferConfigService[F]
+  ): Resource[F, TransferProcessingService[F]] =
+    Resource.eval:
+      make(gatewayService, accountService, transfersRepo, configService)
+
+  def make[F[_]: Concurrent: Temporal](
+    gatewayService: PaymentGatewayService[F],
+    accountService: AccountService[F],
+    transfersRepo: TransfersRepo[F],
+    configService: TransferConfigService[F]
+  ): F[TransferProcessingService[F]] =
+    for
+      activeHandlers <- Ref.of[F, Map[String, Fiber[F, Throwable, Unit]]](
+        Map.empty
+      )
+      service <- make(
+        gatewayService,
+        accountService,
+        transfersRepo,
+        configService,
+        activeHandlers
+      )
+    yield service
+
   private def make[F[_]: Concurrent: Temporal](
     gatewayService: PaymentGatewayService[F],
     accountService: AccountService[F],
@@ -138,31 +166,3 @@ object TransferProcessingService:
               )
         yield ()
     }.pure[F]
-
-  def make[F[_]: Concurrent: Temporal](
-    gatewayService: PaymentGatewayService[F],
-    accountService: AccountService[F],
-    transfersRepo: TransfersRepo[F],
-    configService: TransferConfigService[F]
-  ): F[TransferProcessingService[F]] =
-    for
-      activeHandlers <- Ref.of[F, Map[String, Fiber[F, Throwable, Unit]]](
-        Map.empty
-      )
-      service <- make(
-        gatewayService,
-        accountService,
-        transfersRepo,
-        configService,
-        activeHandlers
-      )
-    yield service
-
-  def makeResource[F[_]: Concurrent: Temporal](
-    gatewayService: PaymentGatewayService[F],
-    accountService: AccountService[F],
-    transfersRepo: TransfersRepo[F],
-    configService: TransferConfigService[F]
-  ): Resource[F, TransferProcessingService[F]] =
-    Resource.eval:
-      make(gatewayService, accountService, transfersRepo, configService)

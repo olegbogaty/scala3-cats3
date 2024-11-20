@@ -6,10 +6,10 @@ import cats.syntax.flatMap.toFlatMapOps
 import cats.syntax.functor.toFunctorOps
 import conf.Config.TransferConfig
 import data.domain.{Account, Transfer}
+import mock.PaymentGatewayService
+import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import munit.CatsEffectSuite
 import repo.{AccountRepoSuite, TransfersRepoSuite}
-import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
-import mock.PaymentGatewayService
 
 import java.time.LocalDateTime
 import scala.concurrent.duration.*

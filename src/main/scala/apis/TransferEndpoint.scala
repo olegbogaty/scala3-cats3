@@ -2,14 +2,12 @@ package apis
 
 import apis.model.TransferRequest.transferRequestExample
 import apis.model.{TransferErrorResponse, TransferRequest, TransferResponse, TransferStatusRequest}
+import cats.effect.Async
 import cats.effect.kernel.Resource
-import cats.effect.{Async, ExitCode, IO, IOApp}
 import cats.{Functor, Monad}
 import data.domain.Transfer
-import http.HttpServer
 import io.circe.generic.auto.*
 import srvc.TransferProcessingService
-import srvc.model.TransferError
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*

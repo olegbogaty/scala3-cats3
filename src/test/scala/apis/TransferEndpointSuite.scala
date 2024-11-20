@@ -21,6 +21,10 @@ import sttp.model.StatusCode
 
 class TransferEndpointSuite extends CatsEffectSuite:
 
+  val httpServer: IOFixture[HttpServer[IO]] = ResourceSuiteLocalFixture(
+    "http-server",
+    makeServer[IO]
+  )
   private val validTransferRequest = TransferRequest(
     senderAccount = 1234567890,
     recipientBankCode = 12345,
@@ -28,7 +32,6 @@ class TransferEndpointSuite extends CatsEffectSuite:
     amount = 100,
     transactionReference = "transactionReference"
   )
-
   private val invalidTransferRequest = TransferRequest(
     senderAccount = 1234567890,
     recipientBankCode = 12345,
@@ -36,7 +39,6 @@ class TransferEndpointSuite extends CatsEffectSuite:
     amount = -50.0,                // Invalid amount
     transactionReference = "transactionReference"
   )
-
   private val initialAccount =
     Account(validTransferRequest.senderAccount, bankCode = 54321, 1000)
 
@@ -61,11 +63,6 @@ class TransferEndpointSuite extends CatsEffectSuite:
       routes <- TransferEndpoint.makeResource(transferService)
       server <- http.HttpServer.makeResource(config.http.server, routes)
     yield server
-
-  val httpServer: IOFixture[HttpServer[IO]] = ResourceSuiteLocalFixture(
-    "http-server",
-    makeServer[IO]
-  )
 
   override def munitFixtures: Seq[IOFixture[HttpServer[IO]]] = List(httpServer)
 

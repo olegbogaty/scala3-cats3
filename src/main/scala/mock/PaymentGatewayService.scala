@@ -16,18 +16,19 @@ trait PaymentGatewayService[F[_]]:
   def checkTransferStatus(transactionReference: String): F[TransferResponse]
 
 object PaymentGatewayService:
-  trait PaymentGatewayServiceStrategy
+  def makeResource[F[_]: Sync](
+    strategy: PaymentGatewayServiceStrategy
+  ): Resource[F, PaymentGatewayService[F]] =
+    Resource.eval:
+      make(strategy)
 
-  object PaymentGatewayServiceStrategy:
-    case object RejectTransfer extends PaymentGatewayServiceStrategy
-
-    case object AlwaysPendingTransfer extends PaymentGatewayServiceStrategy
-
-    case object SuccessTransfer extends PaymentGatewayServiceStrategy
-
-    case object FailureTransfer extends PaymentGatewayServiceStrategy
-
-    case object PendingThenSuccess extends PaymentGatewayServiceStrategy
+  def make[F[_]: Sync](
+    strategy: PaymentGatewayServiceStrategy
+  ): F[PaymentGatewayService[F]] =
+    for
+      state   <- Ref.of(Map.empty[String, Transfer.Status])
+      service <- make(strategy, state)
+    yield service
 
   private def make[F[_]: Sync](
     strategy: PaymentGatewayServiceStrategy,
@@ -66,16 +67,15 @@ object PaymentGatewayService:
                 .map(_ => TransferResponse(Transfer.Status.SUCCESS.toString)) <*
                 state.update(_ - transactionReference)
 
-  def make[F[_]: Sync](
-    strategy: PaymentGatewayServiceStrategy
-  ): F[PaymentGatewayService[F]] =
-    for
-      state   <- Ref.of(Map.empty[String, Transfer.Status])
-      service <- make(strategy, state)
-    yield service
+  trait PaymentGatewayServiceStrategy
 
-  def makeResource[F[_]: Sync](
-    strategy: PaymentGatewayServiceStrategy
-  ): Resource[F, PaymentGatewayService[F]] =
-    Resource.eval:
-      make(strategy)
+  object PaymentGatewayServiceStrategy:
+    case object RejectTransfer extends PaymentGatewayServiceStrategy
+
+    case object AlwaysPendingTransfer extends PaymentGatewayServiceStrategy
+
+    case object SuccessTransfer extends PaymentGatewayServiceStrategy
+
+    case object FailureTransfer extends PaymentGatewayServiceStrategy
+
+    case object PendingThenSuccess extends PaymentGatewayServiceStrategy

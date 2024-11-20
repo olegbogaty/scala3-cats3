@@ -22,11 +22,13 @@ object App extends IOApp:
   private def makeDependencies[F[_]: Async: Temporal: Trace: Network: Console]
     : Resource[F, Unit] =
     for
-      config                <- Config.makeResource
-      session               <- DbConnection.single(config.db)
-      accountRepo           <- AccountsRepo.makeResource(session)
-      transferRepo          <- TransfersRepo.makeResource(session)
-      paymentGatewayService <- PaymentGatewayService.makeResource(PaymentGatewayServiceStrategy.PendingThenSuccess)
+      config       <- Config.makeResource
+      session      <- DbConnection.single(config.db)
+      accountRepo  <- AccountsRepo.makeResource(session)
+      transferRepo <- TransfersRepo.makeResource(session)
+      paymentGatewayService <- PaymentGatewayService.makeResource(
+        PaymentGatewayServiceStrategy.PendingThenSuccess
+      )
       transferConfigService <- TransferConfigService.makeResource(
         config.tc
       )
