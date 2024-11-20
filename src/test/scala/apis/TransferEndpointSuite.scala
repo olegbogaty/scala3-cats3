@@ -71,7 +71,7 @@ class TransferEndpointSuite extends CatsEffectSuite:
   ): IO[Unit] =
     test(HttpURLConnectionBackend()).void
 
-  test("POST /enter-transfer with valid data should return success response") {
+  test("POST /enter-transfer with valid data should return success response"):
     for _ <- withServer { backend =>
         val res = basicRequest
           .post(uri"http://localhost:8080/enter-transfer")
@@ -87,7 +87,6 @@ class TransferEndpointSuite extends CatsEffectSuite:
         }
       }
     yield ()
-  }
 
   test("POST /enter-transfer with invalid data should return error response"):
     for _ <- withServer { backend =>

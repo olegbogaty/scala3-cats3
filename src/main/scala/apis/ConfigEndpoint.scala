@@ -1,12 +1,11 @@
 package apis
 
 import apis.model.{ConfigErrorResponse, ConfigRequest, ConfigResponse}
+import cats.effect.Async
 import cats.effect.kernel.Resource
-import cats.effect.{Async, ExitCode, IO, IOApp}
 import cats.{Functor, Monad}
 import conf.Config
 import conf.Config.TransferConfig
-import http.HttpServer
 import io.circe.generic.auto.*
 import srvc.TransferConfigService
 import sttp.tapir.*
@@ -24,12 +23,11 @@ object ConfigEndpoint:
       .in("config-transfer")
       .in(
         jsonBody[ConfigRequest]
-          .example {
+          .example:
             ConfigRequest(
-              5,
-              5
+              2,
+              2
             )
-          }
       )
       .out(jsonBody[ConfigResponse])
       .errorOut(jsonBody[ConfigErrorResponse])

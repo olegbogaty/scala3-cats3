@@ -52,7 +52,7 @@ object TransferProcessingService:
     configService: TransferConfigService[F],
     activeHandlers: Ref[F, Map[String, Fiber[F, Throwable, Unit]]]
   ): F[TransferProcessingService[F]] =
-    new TransferProcessingService[F] {
+    new TransferProcessingService[F]:
       override def enterTransfer(
         transfer: Transfer
       ): F[Either[TransferError, Transfer]] =
@@ -130,10 +130,10 @@ object TransferProcessingService:
         tries: Int,
         delay: FiniteDuration
       ): F[Unit] =
-        if (tries <= 0) {
+        if (tries <= 0)
           activeHandlers.update(_ - transfer.transactionReference) *>
             ().pure[F]
-        } else {
+        else
           Temporal[F].sleep(delay) *>
             gatewayService
               .checkTransferStatus(transfer.transactionReference)
@@ -144,7 +144,6 @@ object TransferProcessingService:
                   finalizeTransfer(account, transfer, success = false)
                 case TransferResponse("PENDING") =>
                   handleTransferStatus(account, transfer, tries - 1, delay)
-        }
 
       private def finalizeTransfer(
         account: Account,
@@ -154,15 +153,15 @@ object TransferProcessingService:
         for
           _ <- activeHandlers.update(_ - transfer.transactionReference)
           _ <-
-            if (!success) {
+            if (!success)
               // rollback transfer in case of failure
               transfersRepo.update(
                 transfer.copy(status = Transfer.Status.FAILURE)
               ) *>
                 accountService.enterWithdrawal(account, -transfer.amount)
-            } else
+            else
               transfersRepo.update(
                 transfer.copy(status = Transfer.Status.SUCCESS)
               )
         yield ()
-    }.pure[F]
+    .pure[F]

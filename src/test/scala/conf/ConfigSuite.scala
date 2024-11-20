@@ -10,9 +10,7 @@ import munit.CatsEffectSuite
 
 import scala.concurrent.duration.*
 
-//import scala.jdk.CollectionConverters.*
-
-class ConfigSuite extends CatsEffectSuite, EnvHacker:
+class ConfigSuite extends CatsEffectSuite:
 
 //  app = {
 //    db = {
