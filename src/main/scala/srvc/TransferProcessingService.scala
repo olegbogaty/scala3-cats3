@@ -60,7 +60,7 @@ object TransferProcessingService:
           option <- accountService.lookup(transfer.accountId)
           result <- option match
             case Some(account) =>
-              checkTransfer(account, transfer) match
+              validateTransfer(account, transfer) match
                 case Right((account, transfer)) =>
                   for
                     gatewayResponse <- gatewayService.enterTransfer(transfer)
@@ -86,7 +86,7 @@ object TransferProcessingService:
             transfer.status.pure[F]
         yield result
 
-      private def checkTransfer(
+      private def validateTransfer(
         account: Account,
         transfer: Transfer
       ): Either[TransferError, (Account, Transfer)] =
