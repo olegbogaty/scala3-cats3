@@ -131,8 +131,8 @@ object TransferProcessingService:
         delay: FiniteDuration
       ): F[Unit] =
         if (tries <= 0)
-          activeHandlers.update(_ - transfer.transactionReference) *>
-            ().pure[F]
+          // 0 attempts left, rollback transfer
+          finalizeTransfer(account, transfer, success = false)
         else
           Temporal[F].sleep(delay) *>
             gatewayService
