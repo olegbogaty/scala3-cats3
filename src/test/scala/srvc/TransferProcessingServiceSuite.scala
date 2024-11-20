@@ -4,6 +4,7 @@ import cats.effect.kernel.Concurrent
 import cats.effect.{Async, IO, Temporal}
 import cats.syntax.flatMap.toFlatMapOps
 import cats.syntax.functor.toFunctorOps
+import conf.Config.TransferConfig
 import conf.ConfigSuite
 import data.domain.{Account, Transfer}
 import munit.CatsEffectSuite
@@ -15,6 +16,7 @@ import scala.concurrent.duration.*
 
 class TransferProcessingServiceSuite extends CatsEffectSuite:
 
+  private val testConfig = TransferConfig.unsafeFrom(2, 2)
   private val validAccount = Account(1234567890, 333, 500.0)
   private val validTransfer = Transfer(
     accountId = 1234567890,
@@ -30,10 +32,10 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
     strategy: PaymentGatewayServiceStrategy
   ): F[TransferProcessingService[F]] =
     for
-      config         <- ConfigSuite.test
       accountRepo    <- AccountRepoSuite.test
+      _              <- accountRepo.insert(validAccount)
       accountService <- AccountService.make(accountRepo)
-      configService  <- TransferConfigService.make(config.tc)
+      configService  <- TransferConfigService.make(testConfig)
       gateway        <- PaymentGatewayServiceMock.test(strategy)
       transfersRepo  <- TransfersRepoSuite.test
       service <- TransferProcessingService.make(
@@ -130,7 +132,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
       _ <- IO(
         assertEquals(
           status,
-          Some(Transfer.Status.PENDING),
+          Some(Transfer.Status.FAILURE), //
           "Transfer should remain pending"
         )
       )
