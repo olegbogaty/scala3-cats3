@@ -8,7 +8,7 @@ import cats.{Functor, Monad}
 import data.domain.Transfer
 import http.HttpServer
 import io.circe.generic.auto.*
-import srvc.TransferService
+import srvc.TransferProcessingService
 import srvc.model.TransferError
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
@@ -44,18 +44,18 @@ object TransferEndpoint:
       .out(jsonBody[TransferResponse])
 
   def makeResource[F[_]: Async](
-    service: TransferService[F]
+    service: TransferProcessingService[F]
   ): Resource[F, List[ServerEndpoint[Any, F]]] =
     Resource.eval(make(service))
 
   def make[F[_]: Async](
-    service: TransferService[F]
+    service: TransferProcessingService[F]
   ): F[List[ServerEndpoint[Any, F]]] =
     List(enterTransferLogic(service), checkTransferStatusLogic(service))
       .pure[F]
 
   private def enterTransferLogic[F[_]: Monad](
-    service: TransferService[F]
+    service: TransferProcessingService[F]
   ): ServerEndpoint[Any, F] =
     enterTransfer.serverLogic: request =>
       for
@@ -63,7 +63,7 @@ object TransferEndpoint:
         response <- validate match
           case Right(transfer) =>
             service
-              .transfer(transfer)
+              .enterTransfer(transfer)
               .map:
                 _.map: right =>
                   TransferResponse(s"transfer status: ${right.status}")
@@ -92,7 +92,7 @@ object TransferEndpoint:
       .pure[F]
 
   private def checkTransferStatusLogic[F[_]: Functor](
-    service: TransferService[F]
+    service: TransferProcessingService[F]
   ): ServerEndpoint[Any, F] =
     checkTransferStatus.serverLogicSuccess: request =>
       service

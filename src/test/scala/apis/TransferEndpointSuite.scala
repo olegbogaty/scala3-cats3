@@ -9,12 +9,12 @@ import data.domain.Account
 import http.HttpServer
 import io.circe
 import io.circe.generic.auto.*
+import mock.PaymentGatewayService
+import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 import repo.{AccountRepoSuite, TransfersRepoSuite}
-import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
-import mock.PaymentGatewayService
-import srvc.{AccountService, TransferConfigService, TransferService}
+import srvc.{AccountService, TransferConfigService, TransferProcessingService}
 import sttp.client3.*
 import sttp.client3.circe.*
 import sttp.model.StatusCode
@@ -52,10 +52,10 @@ class TransferEndpointSuite extends CatsEffectSuite:
         config.tc
       )
       accountService <- AccountService.makeResource(accountRepo)
-      transferService <- TransferService.makeResource(
+      transferService <- TransferProcessingService.makeResource(
+        paymentGatewayService,
         accountService,
         transferRepo,
-        paymentGatewayService,
         transferConfigService
       )
       routes <- TransferEndpoint.makeResource(transferService)
@@ -106,10 +106,13 @@ class TransferEndpointSuite extends CatsEffectSuite:
           assert(res.body.isLeft)
           println(res.body.left.map(_.getMessage))
           assert(
-            res.body.left.get.getMessage // didn't find the right way to check exception
-              .contains(
-                "amount should be more then 0, sender account number should not be a recipient account number"
+            res.body.swap
+              .map(
+                _.getMessage.contains(
+                  "amount should be more then 0, sender account number should not be a recipient account number"
+                )
               )
+              .getOrElse(false)
           )
         }
       }

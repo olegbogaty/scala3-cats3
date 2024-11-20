@@ -10,7 +10,7 @@ import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import natchez.Trace
 import natchez.Trace.Implicits.noop
 import repo.{AccountsRepo, TransfersRepo}
-import srvc.{AccountService, TransferConfigService, TransferService}
+import srvc.{AccountService, TransferConfigService, TransferProcessingService}
 
 object App extends IOApp:
 
@@ -31,10 +31,10 @@ object App extends IOApp:
         config.tc
       )
       accountService <- AccountService.makeResource(accountRepo)
-      transfersService <- TransferService.makeResource(
+      transfersService <- TransferProcessingService.makeResource(
+        paymentGatewayService,
         accountService,
         transferRepo,
-        paymentGatewayService,
         transferConfigService
       )
       transferEndpoints <- TransferEndpoint.makeResource(transfersService)

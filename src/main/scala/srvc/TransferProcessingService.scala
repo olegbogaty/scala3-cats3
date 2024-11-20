@@ -157,3 +157,12 @@ object TransferProcessingService:
         activeHandlers
       )
     yield service
+
+  def makeResource[F[_]: Concurrent: Temporal](
+    gatewayService: PaymentGatewayService[F],
+    accountService: AccountService[F],
+    transfersRepo: TransfersRepo[F],
+    configService: TransferConfigService[F]
+  ): Resource[F, TransferProcessingService[F]] =
+    Resource.eval:
+      make(gatewayService, accountService, transfersRepo, configService)
