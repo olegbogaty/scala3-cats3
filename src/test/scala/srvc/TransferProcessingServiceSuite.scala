@@ -5,7 +5,6 @@ import cats.effect.{Async, IO, Temporal}
 import cats.syntax.flatMap.toFlatMapOps
 import cats.syntax.functor.toFunctorOps
 import conf.Config.TransferConfig
-import conf.ConfigSuite
 import data.domain.{Account, Transfer}
 import munit.CatsEffectSuite
 import repo.{AccountRepoSuite, TransfersRepoSuite}
@@ -16,7 +15,7 @@ import scala.concurrent.duration.*
 
 class TransferProcessingServiceSuite extends CatsEffectSuite:
 
-  private val testConfig = TransferConfig.unsafeFrom(2, 2)
+  private val testConfig   = TransferConfig.unsafeFrom(2, 2)
   private val validAccount = Account(1234567890, 333, 500.0)
   private val validTransfer = Transfer(
     accountId = 1234567890,
@@ -48,7 +47,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
 
   test(
     "enterTransfer should lock funds and add transfer to repo for pending transfer"
-  ) {
+  ):
     for
       service <- makeService[IO](
         PaymentGatewayServiceStrategy.AlwaysPendingTransfer
@@ -63,9 +62,8 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         )
       }
     yield ()
-  }
 
-  test("enterTransfer should return error for insufficient balance") {
+  test("enterTransfer should return error for insufficient balance"):
     val invalidTransfer =
       validTransfer.copy(amount = 1000.0) // More than balance
     for
@@ -85,9 +83,8 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         )
       }
     yield ()
-  }
 
-  test("Pending transfer should finalize as SUCCESS and update balances") {
+  test("Pending transfer should finalize as SUCCESS and update balances"):
     for
       service <- makeService[IO](
         PaymentGatewayServiceStrategy.PendingThenSuccess
@@ -103,9 +100,8 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         )
       )
     yield ()
-  }
 
-  test("Pending transfer should rollback on FAILURE") {
+  test("Pending transfer should rollback on FAILURE"):
     for
       service <- makeService[IO](PaymentGatewayServiceStrategy.FailureTransfer)
       _       <- service.enterTransfer(validTransfer)
@@ -119,9 +115,8 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         )
       )
     yield ()
-  }
 
-  test("Transfer should stop after reaching tries limit") {
+  test("Transfer should stop after reaching tries limit"):
     for
       service <- makeService[IO](
         PaymentGatewayServiceStrategy.AlwaysPendingTransfer
@@ -137,4 +132,3 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         )
       )
     yield ()
-  }
