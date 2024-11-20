@@ -6,6 +6,7 @@ import cats.effect.implicits.*
 import cats.instances.all.*
 import cats.syntax.all.*
 import data.domain.{Account, Transfer}
+import mock.PaymentGatewayService
 import repo.TransfersRepo
 import srvc.model.TransferError
 

@@ -8,7 +8,8 @@ import conf.Config.TransferConfig
 import data.domain.{Account, Transfer}
 import munit.CatsEffectSuite
 import repo.{AccountRepoSuite, TransfersRepoSuite}
-import srvc.PaymentGatewayServiceMock.PaymentGatewayServiceStrategy
+import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
+import mock.PaymentGatewayService
 
 import java.time.LocalDateTime
 import scala.concurrent.duration.*
@@ -35,7 +36,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
       _              <- accountRepo.insert(validAccount)
       accountService <- AccountService.make(accountRepo)
       configService  <- TransferConfigService.make(testConfig)
-      gateway        <- PaymentGatewayServiceMock.test(strategy)
+      gateway        <- PaymentGatewayService.make(strategy)
       transfersRepo  <- TransfersRepoSuite.test
       service <- TransferProcessingService.make(
         gateway,

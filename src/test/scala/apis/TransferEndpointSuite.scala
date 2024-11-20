@@ -12,8 +12,9 @@ import io.circe.generic.auto.*
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 import repo.{AccountRepoSuite, TransfersRepoSuite}
-import srvc.PaymentGatewayServiceMock.PaymentGatewayServiceStrategy
-import srvc.{AccountService, PaymentGatewayServiceMock, TransferConfigService, TransferService}
+import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
+import mock.PaymentGatewayService
+import srvc.{AccountService, TransferConfigService, TransferService}
 import sttp.client3.*
 import sttp.client3.circe.*
 import sttp.model.StatusCode
@@ -45,8 +46,8 @@ class TransferEndpointSuite extends CatsEffectSuite:
       accountRepo  <- AccountRepoSuite.testResource
       _            <- Resource.eval(accountRepo.insert(initialAccount))
       transferRepo <- TransfersRepoSuite.testResource
-      paymentGatewayService <- PaymentGatewayServiceMock
-        .testResource(PaymentGatewayServiceStrategy.SuccessTransfer)
+      paymentGatewayService <- PaymentGatewayService
+        .makeResource(PaymentGatewayServiceStrategy.SuccessTransfer)
       transferConfigService <- TransferConfigService.makeResource(
         config.tc
       )

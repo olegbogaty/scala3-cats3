@@ -9,11 +9,13 @@ import cats.syntax.applicative.*
 import data.domain.Transfer.Status
 import data.domain.{Account, Transfer}
 import logs.Log
+import mock.PaymentGatewayService
 import repo.TransfersRepo
 import srvc.model.TransferError
 
 import scala.concurrent.duration.*
 
+// TODO remove and replace with TransferProcessingService
 trait TransferService[F[_]] extends Log[F]:
   def transfer(transfer: Transfer): F[Either[TransferError, Transfer]]
   def checkTransferStatus( // TODO refactor and move into transfer check service?

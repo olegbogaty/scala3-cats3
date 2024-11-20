@@ -5,10 +5,12 @@ import conf.Config
 import data.DbConnection
 import fs2.io.net.Network
 import http.HttpServer
+import mock.PaymentGatewayService
+import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import natchez.Trace
 import natchez.Trace.Implicits.noop
 import repo.{AccountsRepo, TransfersRepo}
-import srvc.{AccountService, PaymentGatewayService, TransferConfigService, TransferService}
+import srvc.{AccountService, TransferConfigService, TransferService}
 
 object App extends IOApp:
 
@@ -24,7 +26,7 @@ object App extends IOApp:
       session               <- DbConnection.single(config.db)
       accountRepo           <- AccountsRepo.makeResource(session)
       transferRepo          <- TransfersRepo.makeResource(session)
-      paymentGatewayService <- PaymentGatewayService.makeResource
+      paymentGatewayService <- PaymentGatewayService.makeResource(PaymentGatewayServiceStrategy.PendingThenSuccess)
       transferConfigService <- TransferConfigService.makeResource(
         config.tc
       )
