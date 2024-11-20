@@ -22,8 +22,8 @@ class ConfigSuite extends CatsEffectSuite:
 //      user = ${ ? DATABASE_USER }
 //      pass = "oradian"
 //      pass = ${ ? DATABASE_PASS }
-//      base = "oradian"
-//      base = ${ ? DATABASE_BASE }
+//      name = "oradian"
+//      name = ${ ? DATABASE_NAME }
 //    }
 //    #transfer config
 //      tc = {
@@ -51,7 +51,7 @@ class ConfigSuite extends CatsEffectSuite:
         "DATABASE_HOST"         -> "5454",
         "DATABASE_USER"         -> "oradian",
         "DATABASE_PASS"         -> "oradian",
-        "DATABASE_BASE"         -> "oradian",
+        "DATABASE_NAME"         -> "oradian",
         "TRANSFER_CONFIG_TRIES" -> "10",
         "TRANSFER_CONFIG_DELAY" -> "10",
         "SERVER_HOST"           -> "localhost",
@@ -72,7 +72,7 @@ object ConfigSuite:
     port = UserPortNumber.unsafeFrom(5454),
     user = NonEmptyString.unsafeFrom("oradian"),
     pass = NonEmptyString.unsafeFrom("oradian"),
-    base = NonEmptyString.unsafeFrom("oradian")
+    name = NonEmptyString.unsafeFrom("oradian")
   )
 
   val transferConfig: TransferConfig =

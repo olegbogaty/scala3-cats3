@@ -16,7 +16,7 @@ object DbConnection:
       port = config.port.value,
       user = config.user.value,
       password = Some(config.pass.value),
-      database = config.base.value
+      database = config.name.value
     )
 
   def pooled[F[_]: Temporal: Trace: Network: Console](
@@ -27,6 +27,6 @@ object DbConnection:
       port = config.port.value,
       user = config.user.value,
       password = Some(config.pass.value),
-      database = config.base.value,
+      database = config.name.value,
       max = 10
     )

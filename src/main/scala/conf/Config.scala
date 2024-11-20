@@ -1,8 +1,8 @@
 package conf
 
 import apis.model.ConfigRequest
+import cats.effect.Async
 import cats.effect.kernel.Resource
-import cats.effect.{Async, IO, IOApp}
 import cats.implicits.given
 import cats.syntax.all.*
 import ciris.*
@@ -30,7 +30,7 @@ object Config:
       env("DATABASE_PORT").as[UserPortNumber].default(5454),
       env("DATABASE_USER").as[NonEmptyString].default("oradian"),
       env("DATABASE_PASS").as[NonEmptyString].default("oradian"),
-      env("DATABASE_BASE").as[NonEmptyString].default("oradian")
+      env("DATABASE_NAME").as[NonEmptyString].default("oradian")
     ).parMapN(DbConfig.apply)
 
   private def transferConfig[F[_]]: ConfigValue[F, TransferConfig] =
@@ -53,7 +53,7 @@ object Config:
     port: UserPortNumber,
     user: NonEmptyString,
     pass: NonEmptyString,
-    base: NonEmptyString
+    name: NonEmptyString
   )
 
   final case class TransferConfig(
