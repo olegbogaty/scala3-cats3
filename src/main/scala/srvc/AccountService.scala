@@ -13,7 +13,7 @@ import repo.AccountsRepo
 trait AccountService[F[_]]:
   def lookup(accountId: Int): F[Option[Account]]
   def balance(accountId: Int): F[Option[BigDecimal]]
-  def enterWithdrawal(account: Account, amount: BigDecimal): F[Account]
+  def enterWithdrawal(account: Account, amount: BigDecimal): F[Unit]
 
 object AccountService:
   def makeResource[F[_]: Sync](
@@ -31,9 +31,9 @@ object AccountService:
           accountsRepo.select(accountId)
         def balance(accountId: Int): F[Option[BigDecimal]] =
           lookup(accountId).map(_.map(_.balance))
-        def enterWithdrawal(account: Account, amount: BigDecimal): F[Account] =
+        def enterWithdrawal(account: Account, amount: BigDecimal): F[Unit] =
           val updatedAccount = account
             .into[Account]
             .withFieldComputed(_.balance, _.balance - amount)
             .transform
-          accountsRepo.update(updatedAccount) *> updatedAccount.pure[F]
+          accountsRepo.update(updatedAccount) *> ().pure[F]

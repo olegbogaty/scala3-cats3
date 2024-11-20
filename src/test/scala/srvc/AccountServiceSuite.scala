@@ -36,11 +36,15 @@ class AccountServiceSuite extends CatsEffectSuite:
     withService[IO].flatMap: srvc =>
       for
         account        <- srvc.lookup(testAccount.accountId).map(_.get)
-        updatedAccount <- srvc.enterWithdrawal(account, withdrawalAmount)
-        updatedBalance <- srvc.balance(testAccount.accountId)
+        _              <- srvc.enterWithdrawal(account, withdrawalAmount)
+        updatedAccount <- srvc.lookup(testAccount.accountId).map(_.get)
+        updatedBalance <- srvc.balance(testAccount.accountId).map(_.get)
       yield
-        assertEquals(updatedAccount.balance, account.balance - withdrawalAmount)
-        assertEquals(updatedBalance.get, account.balance - withdrawalAmount)
+        assertEquals(
+          updatedAccount.balance,
+          account.balance - withdrawalAmount
+        )
+        assertEquals(updatedBalance, account.balance - withdrawalAmount)
 
   test(
     "enterWithdrawal should update account balance by minus amount (in case of rollback transfer)"
@@ -49,8 +53,9 @@ class AccountServiceSuite extends CatsEffectSuite:
     withService[IO].flatMap: srvc =>
       for
         account        <- srvc.lookup(testAccount.accountId).map(_.get)
-        updatedAccount <- srvc.enterWithdrawal(account, withdrawalAmount)
-        updatedBalance <- srvc.balance(testAccount.accountId)
+        _              <- srvc.enterWithdrawal(account, withdrawalAmount)
+        updatedAccount <- srvc.lookup(testAccount.accountId).map(_.get)
+        updatedBalance <- srvc.balance(testAccount.accountId).map(_.get)
       yield
         assertEquals(updatedAccount.balance, account.balance - withdrawalAmount)
-        assertEquals(updatedBalance.get, account.balance - withdrawalAmount)
+        assertEquals(updatedBalance, account.balance - withdrawalAmount)
