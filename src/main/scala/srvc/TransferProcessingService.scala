@@ -22,7 +22,7 @@ object TransferProcessingService:
     transfersRepo: TransfersRepo[F],
     configService: TransferConfigService[F],
     activeHandlers: Ref[F, Map[String, Fiber[F, Throwable, Unit]]]
-  ) =
+  ): F[TransferProcessingService[F]] =
     new TransferProcessingService[F] {
       override def enterTransfer(
         transfer: Transfer
@@ -138,13 +138,21 @@ object TransferProcessingService:
         yield ()
     }.pure[F]
 
-    //  def make[F[_]: Sync: Concurrent: Temporal](
-    //                                        gatewayService: PaymentGatewayService[F],
-    //                                        accountService: AccountService[F],
-    //                                        transfersRepo: TransfersRepo[F],
-    //                                        configService: TransferConfigService[F]
-    //                                      ) =
-    //    for
-    //      activeHandlers <- Ref.of[F, Map[String, Fiber[F, Throwable, Unit]]](Map.empty)
-    //      service <- make(gatewayService, accountService, transfersRepo, configService, activeHandlers)
-    //    yield service
+  def make[F[_]: Concurrent: Temporal](
+    gatewayService: PaymentGatewayService[F],
+    accountService: AccountService[F],
+    transfersRepo: TransfersRepo[F],
+    configService: TransferConfigService[F]
+  ): F[TransferProcessingService[F]] =
+    for
+      activeHandlers <- Ref.of[F, Map[String, Fiber[F, Throwable, Unit]]](
+        Map.empty
+      )
+      service <- make(
+        gatewayService,
+        accountService,
+        transfersRepo,
+        configService,
+        activeHandlers
+      )
+    yield service
