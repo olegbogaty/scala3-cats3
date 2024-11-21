@@ -45,19 +45,6 @@ object HttpServer:
       .parallel[F]
       .map(NettyCatsServer[F](_))
 
-//  def make[F[_]: Async: Console](
-//    config: ServerConfig,
-//    endpoints: List[ServerEndpoint[Any, F]]
-//  ): F[HttpServer[F]] =
-//    bindServer(config, endpoints)
-//      .use: server =>
-//        for
-//          _ <- Console[F].println(
-//            s"Go to http://localhost:${config.port.value}/docs to open SwaggerUI"
-//          )
-//        yield new HttpServer[F]:
-//          override def serve(): F[Unit] = server.start().void
-
   private def docs[F[_]](
     endpoints: List[ServerEndpoint[Any, F]]
   ): List[ServerEndpoint[Any, F]] =
