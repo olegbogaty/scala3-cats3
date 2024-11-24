@@ -11,8 +11,8 @@ this will start postgresql image and fill the db with test data
 `sbt "runMain com.github.olegbogaty.oradian.App"`
 3. In your browser go to http://localhost:8080/docs to open SwaggerUI
 4. for tests use `sbt test`
-5. default lof level is Debug
-6. // refactor with cats actor (optional)
+5. default log level is Debug
+6. // refactor with [cats-actors](https://github.com/suprnation/cats-actors) (optional)
 
 the default postgres port is 5454
 the default http server port is 8080
