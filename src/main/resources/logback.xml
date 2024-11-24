@@ -6,7 +6,10 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <root level="INFO">
+    <logger name="com.github.olegbogaty.oradian" level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <root level="OFF">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
