@@ -8,6 +8,7 @@ import com.github.olegbogaty.oradian.apis.model.{TransferErrorResponse, Transfer
 import com.github.olegbogaty.oradian.data.domain.Transfer
 import com.github.olegbogaty.oradian.srvc.TransferProcessingService
 import io.circe.generic.auto.*
+import scribe.Scribe
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
@@ -42,22 +43,23 @@ object TransferEndpoint:
       )
       .out(jsonBody[TransferResponse])
 
-  def makeResource[F[_]: Async](
+  def makeResource[F[_]: Async: Scribe](
     service: TransferProcessingService[F]
   ): Resource[F, List[ServerEndpoint[Any, F]]] =
     Resource.eval(make(service))
 
-  def make[F[_]: Async](
+  def make[F[_]: Async: Scribe](
     service: TransferProcessingService[F]
   ): F[List[ServerEndpoint[Any, F]]] =
     List(enterTransferLogic(service), checkTransferStatusLogic(service))
       .pure[F]
 
-  private def enterTransferLogic[F[_]: Monad](
+  private def enterTransferLogic[F[_]: Monad: Scribe](
     service: TransferProcessingService[F]
   ): ServerEndpoint[Any, F] =
     enterTransfer.serverLogic: request =>
       for
+        _        <- Scribe[F].debug(s"received request: $request")
         validate <- validateRequest(request)
         response <- validate match
           case Right(transfer) =>
@@ -96,7 +98,7 @@ object TransferEndpoint:
     checkTransferStatus.serverLogicSuccess: request =>
       service
         .checkTransferStatus(request.transactionReference)
-        .map: transferStatus =>
+        .map: status =>
           TransferResponse(
-            s"transfer status: $transferStatus"
+            s"transfer status: $status"
           )

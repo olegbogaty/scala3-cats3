@@ -4,8 +4,8 @@ import cats.effect.{IO, Sync}
 import cats.implicits.*
 import com.github.olegbogaty.oradian.repo.AccountRepoSuite
 import com.github.olegbogaty.oradian.repo.AccountRepoSuite.testAccount
-import com.github.olegbogaty.oradian.srvc.AccountService
 import munit.CatsEffectSuite
+import scribe.cats.given
 
 class AccountServiceSuite extends CatsEffectSuite:
 

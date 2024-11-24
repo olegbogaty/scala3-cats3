@@ -3,7 +3,6 @@ package com.github.olegbogaty.oradian.repo
 import cats.effect.{IO, Resource, Sync}
 import cats.implicits.*
 import com.github.olegbogaty.oradian.data.domain.Transfer
-import com.github.olegbogaty.oradian.repo.TransfersRepo
 import com.github.olegbogaty.oradian.repo.TransfersRepoSuite.testTransfer
 import munit.CatsEffectSuite
 

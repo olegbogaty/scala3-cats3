@@ -6,17 +6,23 @@ import cats.syntax.flatMap.toFlatMapOps
 import cats.syntax.functor.toFunctorOps
 import com.github.olegbogaty.oradian.conf.Config.TransferConfig
 import com.github.olegbogaty.oradian.data.domain.{Account, Transfer}
+import com.github.olegbogaty.oradian.logs.Log
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import com.github.olegbogaty.oradian.repo.{AccountRepoSuite, TransfersRepoSuite}
 import munit.CatsEffectSuite
+import munit.catseffect.IOFixture
+import scribe.Level
 import scribe.cats.given
 
 import java.time.LocalDateTime
 import scala.concurrent.duration.*
 
 class TransferProcessingServiceSuite extends CatsEffectSuite:
-
+  private val logLevel: IOFixture[Unit] = ResourceSuiteLocalFixture(
+    "logLevel",
+    Log.makeResource(Level.Warn)
+  )
   private val testConfig   = TransferConfig.unsafeFrom(1, 1) // to speedup test
   private val validAccount = Account(1234567890, 333, 500.0)
   private val validTransfer = Transfer(
@@ -28,6 +34,8 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
     status = Transfer.Status.PENDING,
     transferDate = LocalDateTime.now
   )
+
+  override def munitFixtures: Seq[IOFixture[Unit]] = List(logLevel)
 
   private def makeService[F[_]: Async: Concurrent: Temporal](
     strategy: PaymentGatewayServiceStrategy
@@ -92,7 +100,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         PaymentGatewayServiceStrategy.PendingThenSuccess
       )
       _      <- service.enterTransfer(validTransfer)
-      _      <- IO.sleep(4.seconds) // Wait for retries
+      _      <- IO.sleep(2.seconds) // Wait for retries
       status <- service.checkTransferStatus(validTransfer.transactionReference)
       _ <- IO(
         assertEquals(

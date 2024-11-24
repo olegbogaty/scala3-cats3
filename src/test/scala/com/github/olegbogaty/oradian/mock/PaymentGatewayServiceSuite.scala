@@ -1,20 +1,25 @@
 package com.github.olegbogaty.oradian.mock
 
-import cats.effect.{IO, Ref, Resource, Sync}
-import cats.syntax.all.*
+import cats.effect.IO
 import com.github.olegbogaty.oradian.apis.model.{TransferErrorResponse, TransferResponse}
-import com.github.olegbogaty.oradian.data.domain.Transfer
-import com.github.olegbogaty.oradian.mock.PaymentGatewayService
+import com.github.olegbogaty.oradian.logs.Log
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import com.github.olegbogaty.oradian.repo.TransfersRepoSuite
 import munit.CatsEffectSuite
+import munit.catseffect.IOFixture
+import scribe.Level
+import scribe.cats.given
 
 class PaymentGatewayServiceSuite extends CatsEffectSuite:
-
+  private val logLevel: IOFixture[Unit] = ResourceSuiteLocalFixture(
+    "logLevel",
+    Log.makeResource(Level.Warn)
+  )
   private val sampleTransfer = TransfersRepoSuite.testTransfer
-
   private val sampleTransactionRef =
     TransfersRepoSuite.testTransfer.transactionReference
+
+  override def munitFixtures: Seq[IOFixture[Unit]] = List(logLevel)
 
   test("RejectTransfer should return a rejection response for enterTransfer"):
     for

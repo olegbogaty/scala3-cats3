@@ -8,12 +8,14 @@ resolvers += "jitpack" at "https://jitpack.io"
 lazy val root = project
   .in(file("."))
   .settings(
+    Compile / run / fork := true,
     name         := "oradian",
     version      := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       ciris,
       cirisRefined,
+      refinedCats,
       skunkCore,
       catsEffect,
       chimney,
@@ -22,9 +24,8 @@ lazy val root = project
       tapirNettyServerCats,
       tapirSwaggerUiBundle,
       tapirJsonCirce,
-      logbackClassic,
-      scribe,
       scribeCats,
+      slf4jNop,
       munit,
       munitCatsEffect,
       tapirSttpStubServer,

@@ -6,6 +6,7 @@ import cats.effect.kernel.Resource
 import cats.effect.std.{Console, Dispatcher}
 import cats.syntax.all.*
 import com.github.olegbogaty.oradian.conf.Config.ServerConfig
+import scribe.Scribe
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.netty.cats.{NettyCatsServer, NettyCatsServerBinding}
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
@@ -14,7 +15,7 @@ trait HttpServer[F[_]]:
   def serve(): F[NettyCatsServerBinding[F]]
 
 object HttpServer:
-  def makeResource[F[_]: Async: Console](
+  def makeResource[F[_]: Async: Console: Scribe](
     config: ServerConfig,
     endpoints: List[ServerEndpoint[Any, F]]
   ): Resource[F, HttpServer[F]] =
@@ -22,9 +23,8 @@ object HttpServer:
       server <- bindServer(config, endpoints)
       handle <- Resource.eval:
         for
-          _ <- Console[F].println(
+          _ <- Scribe[F].info:
             s"Go to http://localhost:${config.port.value}/docs to open SwaggerUI"
-          )
           binding <- server.start()
         yield new HttpServer[F]:
           override def serve(): F[NettyCatsServerBinding[F]] = binding.pure[F]

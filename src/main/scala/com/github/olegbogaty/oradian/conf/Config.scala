@@ -3,23 +3,28 @@ package com.github.olegbogaty.oradian.conf
 import cats.effect.Async
 import cats.effect.kernel.Resource
 import cats.implicits.given
+import cats.instances.all.*
 import cats.syntax.all.*
 import ciris.*
 import ciris.refined.*
 import com.github.olegbogaty.oradian.apis.model.ConfigRequest
 import eu.timepit.refined.*
 import eu.timepit.refined.api.*
+import eu.timepit.refined.cats.*
 import eu.timepit.refined.types.all.*
 import eu.timepit.refined.types.net.UserPortNumber
 import eu.timepit.refined.types.string.NonEmptyString
+import scribe.Scribe
 
 import scala.concurrent.duration.*
 
 object Config:
-  def makeResource[F[_]: Async]: Resource[F, AppConfig] = Resource.eval:
+  def makeResource[F[_]: Async: Scribe]: Resource[F, AppConfig] = Resource.eval:
     make
 
-  def make[F[_]: Async]: F[AppConfig] = appConfig.load
+  def make[F[_]: Async: Scribe]: F[AppConfig] =
+    appConfig.load.flatTap: conf =>
+      Scribe[F].debug(s"config loaded: $conf")
 
   private def appConfig[F[_]]: ConfigValue[F, AppConfig] =
     (dbConfig, transferConfig, httpConfig).parMapN(AppConfig.apply)
@@ -29,7 +34,7 @@ object Config:
       env("DATABASE_HOST").as[NonEmptyString].default("localhost"),
       env("DATABASE_PORT").as[UserPortNumber].default(5454),
       env("DATABASE_USER").as[NonEmptyString].default("oradian"),
-      env("DATABASE_PASS").as[NonEmptyString].default("oradian"),
+      env("DATABASE_PASS").as[NonEmptyString].default("oradian").secret,
       env("DATABASE_NAME").as[NonEmptyString].default("oradian")
     ).parMapN(DbConfig.apply)
 
@@ -52,7 +57,7 @@ object Config:
     host: NonEmptyString,
     port: UserPortNumber,
     user: NonEmptyString,
-    pass: NonEmptyString,
+    pass: Secret[NonEmptyString],
     name: NonEmptyString
   )
 

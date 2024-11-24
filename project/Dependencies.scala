@@ -5,6 +5,7 @@ object Dependencies {
 
   object ver {
     lazy val cirisVersion            = "3.6.0"
+    lazy val refinedCatsVersion      = "0.11.2"
     lazy val skunkVersion            = "0.6.4"
     lazy val catsEffectVersion       = "3.5.5"
     lazy val chimneyVersion          = "1.5.0"
@@ -15,14 +16,16 @@ object Dependencies {
     lazy val sttpClient3CirceVersion = "3.9.8"
     lazy val scalatestVersion        = "3.2.19"
     lazy val catsActorsVersion       = "2.0.0-RC5"
+    lazy val slf4jNopVersion         = "2.0.16"
   }
 
   // main
-  lazy val ciris        = "is.cir"        %% "ciris"         % cirisVersion
-  lazy val cirisRefined = "is.cir"        %% "ciris-refined" % cirisVersion
-  lazy val skunkCore    = "org.tpolecat"  %% "skunk-core"    % skunkVersion
-  lazy val catsEffect   = "org.typelevel" %% "cats-effect"   % catsEffectVersion
-  lazy val chimney      = "io.scalaland"  %% "chimney"       % chimneyVersion
+  lazy val ciris        = "is.cir"       %% "ciris"         % cirisVersion
+  lazy val cirisRefined = "is.cir"       %% "ciris-refined" % cirisVersion
+  lazy val refinedCats  = "eu.timepit"   %% "refined-cats"  % refinedCatsVersion
+  lazy val skunkCore    = "org.tpolecat" %% "skunk-core"    % skunkVersion
+  lazy val catsEffect = "org.typelevel" %% "cats-effect" % catsEffectVersion
+  lazy val chimney    = "io.scalaland"  %% "chimney"     % chimneyVersion
 
   // http
   lazy val tapirCore =
@@ -37,9 +40,8 @@ object Dependencies {
     "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
 
   // logs
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.8"
-  lazy val scribe         = "com.outr"      %% "scribe"          % scribeVersion
-  lazy val scribeCats     = "com.outr"      %% "scribe-cats"     % scribeVersion
+  lazy val scribeCats = "com.outr" %% "scribe-cats" % scribeVersion
+  lazy val slf4jNop   = "org.slf4j" % "slf4j-nop"   % slf4jNopVersion
 
   // test
   lazy val munit = "org.scalameta" %% "munit" % munitVersion % Test

@@ -2,12 +2,15 @@ package com.github.olegbogaty.oradian.conf
 
 import cats.effect.kernel.Resource
 import cats.effect.{Async, IO}
-import com.github.olegbogaty.oradian.conf.Config
+import ciris.Secret
 import com.github.olegbogaty.oradian.conf.Config.{AppConfig, DbConfig, HttpConfig, ServerConfig, TransferConfig}
+import eu.timepit.refined.cats.*
 import eu.timepit.refined.types.all.NonEmptyString
 import eu.timepit.refined.types.net.UserPortNumber
 import eu.timepit.refined.types.numeric.PosInt
 import munit.CatsEffectSuite
+import scribe.Scribe
+import scribe.cats.given
 
 import scala.concurrent.duration.*
 
@@ -72,7 +75,7 @@ object ConfigSuite:
     host = NonEmptyString.unsafeFrom("localhost"),
     port = UserPortNumber.unsafeFrom(5454),
     user = NonEmptyString.unsafeFrom("oradian"),
-    pass = NonEmptyString.unsafeFrom("oradian"),
+    pass = Secret(NonEmptyString.unsafeFrom("oradian")),
     name = NonEmptyString.unsafeFrom("oradian")
   )
 
@@ -92,7 +95,9 @@ object ConfigSuite:
     http = httpConfig
   )
 
-  def testResource[F[_]: Async]: Resource[F, AppConfig] = Resource.eval:
-    test
+  def testResource[F[_]: Async: Scribe]: Resource[F, AppConfig] =
+    Resource.eval:
+      test
 
-  def test[F[_]: Async]: F[AppConfig] = Config.make[F]
+  def test[F[_]: Async: Scribe]: F[AppConfig] =
+    Config.make[F]

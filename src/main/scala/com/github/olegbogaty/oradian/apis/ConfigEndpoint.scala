@@ -8,6 +8,7 @@ import com.github.olegbogaty.oradian.conf.Config
 import com.github.olegbogaty.oradian.conf.Config.TransferConfig
 import com.github.olegbogaty.oradian.srvc.TransferConfigService
 import io.circe.generic.auto.*
+import scribe.Scribe
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
@@ -37,21 +38,22 @@ object ConfigEndpoint:
       .in("config-transfer")
       .out(jsonBody[ConfigResponse])
 
-  def makeResource[F[_]: Async](
+  def makeResource[F[_]: Async: Scribe](
     service: TransferConfigService[F]
   ): Resource[F, List[ServerEndpoint[Any, F]]] =
     Resource.eval(make(service))
 
-  def make[F[_]: Async](
+  def make[F[_]: Async: Scribe](
     service: TransferConfigService[F]
   ): F[List[ServerEndpoint[Any, F]]] =
     List(configTransferLogic(service), reviewSettingsLogic(service)).pure[F]
 
-  private def configTransferLogic[F[_]: Monad](
+  private def configTransferLogic[F[_]: Monad: Scribe](
     service: TransferConfigService[F]
   ): ServerEndpoint[Any, F] =
     configTransfer.serverLogic: request =>
       for
+        _        <- Scribe[F].debug(s"received request: $request")
         validate <- validateRequest(request)
         response <- validate match
           case Right(config) =>

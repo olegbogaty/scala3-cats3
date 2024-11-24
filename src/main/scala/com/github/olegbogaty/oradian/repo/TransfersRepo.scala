@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import com.github.olegbogaty.oradian.data.domain.Transfer
 import com.github.olegbogaty.oradian.data.domain.Transfer.Status
 import com.github.olegbogaty.oradian.data.domain.Transfer.Status.codec
+import scribe.Scribe
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
@@ -61,24 +62,33 @@ object TransfersRepo:
       WHERE transaction_reference = $varchar
     """.command
 
-  def makeResource[F[_]: Sync](
+  def makeResource[F[_]: Sync: Scribe](
     session: Session[F]
   ): Resource[F, TransfersRepo[F]] =
     Resource.eval(make(session))
 
-  def make[F[_]: Sync](session: Session[F]): F[TransfersRepo[F]] =
+  def make[F[_]: Sync: Scribe](session: Session[F]): F[TransfersRepo[F]] =
     Sync[F].delay:
       new TransfersRepo[F]:
         override def insert(transfer: Transfer): F[Unit] =
-          session.execute(insertOne)(transfer).void
+          Scribe[F].debug(s"insert transfer: $transfer") *>
+            session.execute(insertOne)(transfer).void
 
         override def select(transactionReference: String): F[Option[Transfer]] =
-          session.option(selectOne)(transactionReference)
+          Scribe[F].debug(
+            s"select transfer by transfer reference: $transactionReference"
+          ) *>
+            session.option(selectOne)(transactionReference)
 
         override def update(transfer: Transfer): F[Unit] =
-          session
-            .execute(updateOne)(transfer.status, transfer.transactionReference)
-            .void
+          Scribe[F].debug(s"update transfer: $transfer") *>
+            session
+              .execute(updateOne)(
+                transfer.status,
+                transfer.transactionReference
+              )
+              .void
 
         override def delete(transfer: Transfer): F[Unit] =
-          session.execute(deleteOne)(transfer.transactionReference).void
+          Scribe[F].debug(s"delete transfer: $transfer") *>
+            session.execute(deleteOne)(transfer.transactionReference).void

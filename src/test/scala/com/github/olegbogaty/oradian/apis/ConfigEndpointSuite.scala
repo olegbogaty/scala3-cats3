@@ -3,16 +3,18 @@ package com.github.olegbogaty.oradian.apis
 import cats.effect.*
 import cats.effect.kernel.Resource
 import cats.effect.std.Console
-import com.github.olegbogaty.oradian.apis.ConfigEndpoint
 import com.github.olegbogaty.oradian.apis.model.{ConfigRequest, ConfigResponse}
 import com.github.olegbogaty.oradian.conf.Config
 import com.github.olegbogaty.oradian.conf.Config.TransferConfig
 import com.github.olegbogaty.oradian.http.HttpServer
+import com.github.olegbogaty.oradian.logs.Log
 import com.github.olegbogaty.oradian.srvc.TransferConfigService
 import eu.timepit.refined.types.net.UserPortNumber
 import io.circe.generic.auto.*
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
+import scribe.cats.given
+import scribe.{Level, Scribe}
 import sttp.client3.*
 import sttp.client3.circe.*
 import sttp.model.StatusCode
@@ -29,8 +31,9 @@ class ConfigEndpointSuite extends CatsEffectSuite:
   private val configRequest = ConfigRequest(tries = 5, delay = 5)
   private val initialConfig = TransferConfig.fromRequest(configRequest)
 
-  def makeServer[F[_]: Async: Console]: Resource[F, HttpServer[F]] =
+  def makeServer[F[_]: Async: Console: Scribe]: Resource[F, HttpServer[F]] =
     for
+      _       <- Log.makeResource(Level.Warn)
       config  <- Config.makeResource
       service <- TransferConfigService.makeResource(initialConfig)
       routes  <- ConfigEndpoint.makeResource(service)

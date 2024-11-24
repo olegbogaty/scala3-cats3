@@ -4,7 +4,6 @@ import cats.effect.{IO, Resource, Sync}
 import cats.implicits.*
 import com.github.olegbogaty.oradian.data.domain.Account
 import com.github.olegbogaty.oradian.repo.AccountRepoSuite.testAccount
-import com.github.olegbogaty.oradian.repo.AccountsRepo
 import munit.CatsEffectSuite
 
 import scala.collection.concurrent.TrieMap

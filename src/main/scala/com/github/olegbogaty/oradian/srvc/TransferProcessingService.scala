@@ -65,7 +65,7 @@ object TransferProcessingService:
                 case Right((account, transfer)) =>
                   handleGatewayResponse(account, transfer)
                 case Left(error) => Left(error).pure[F]
-            case None => Left(TransferError("Account not found")).pure[F]
+            case None => Left(TransferError("account not found")).pure[F]
         yield result
 
       override def checkTransferStatus(
@@ -99,10 +99,10 @@ object TransferProcessingService:
           result <- gatewayResponse match
             case Right(_) =>
               startTransferHandler(account, transfer) >>
-                Scribe[F].debug("transfer accepted and pending") >>
+                Scribe[F].debug(s"transfer accepted and pending: $transfer") >>
                 Right(transfer).pure[F]
             case Left(error) =>
-              Scribe[F].debug("transfer rejected") >>
+              Scribe[F].debug(s"transfer rejected: $transfer") >>
                 Left(TransferError(s"transfer rejected: ${error.msg}"))
                   .pure[F]
         yield result
@@ -139,11 +139,11 @@ object TransferProcessingService:
         delay: FiniteDuration
       ): F[Unit] =
         if (tries <= 0)
-          Scribe[F].debug("0 attempts left, rollback transfer") >>
+          Scribe[F].debug(s"0 attempts left, rollback transfer: $transfer") >>
             finalizeTransfer(account, transfer, success = false)
         else
           Scribe[F].debug(
-            s"$tries attempts left for transfer ${transfer.transactionReference}"
+            s"$tries attempts left for transfer $transfer"
           ) >>
             Temporal[F].sleep(delay) >>
             gatewayService
@@ -151,17 +151,17 @@ object TransferProcessingService:
               .flatMap:
                 case TransferResponse("SUCCESS") =>
                   Scribe[F].debug(
-                    s"transfer: ${transfer.transactionReference} SUCCESS"
+                    s"transfer SUCCESS: $transfer"
                   ) *>
                     finalizeTransfer(account, transfer, success = true)
                 case TransferResponse("FAILURE") =>
                   Scribe[F].debug(
-                    s"transfer: ${transfer.transactionReference} FAILURE"
+                    s"transfer FAILURE: $transfer"
                   ) *>
                     finalizeTransfer(account, transfer, success = false)
                 case TransferResponse("PENDING") =>
                   Scribe[F].debug(
-                    s"transfer: ${transfer.transactionReference} PENDING"
+                    s"transfer PENDING: $transfer"
                   ) *>
                     handleTransferStatus(account, transfer, tries - 1, delay)
 

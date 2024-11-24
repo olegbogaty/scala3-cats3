@@ -4,13 +4,23 @@ import cats.effect.{Async, IO, Sync}
 import cats.implicits.*
 import com.github.olegbogaty.oradian.conf.Config.TransferConfig
 import com.github.olegbogaty.oradian.conf.ConfigSuite
-import com.github.olegbogaty.oradian.srvc.TransferConfigService
+import com.github.olegbogaty.oradian.logs.Log
 import eu.timepit.refined.types.numeric.PosInt
 import munit.CatsEffectSuite
+import munit.catseffect.IOFixture
+import scribe.Level
+import scribe.cats.given
 
 import scala.concurrent.duration.given
 
 class TransferConfigServiceSuite extends CatsEffectSuite:
+
+  private val logLevel: IOFixture[Unit] = ResourceSuiteLocalFixture(
+    "logLevel",
+    Log.makeResource(Level.Warn)
+  )
+
+  override def munitFixtures: Seq[IOFixture[Unit]] = List(logLevel)
 
   def withService[F[_]: Async]: F[TransferConfigService[F]] =
     for

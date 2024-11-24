@@ -15,7 +15,7 @@ object DbConnection:
       host = config.host.value,
       port = config.port.value,
       user = config.user.value,
-      password = Some(config.pass.value),
+      password = Some(config.pass.value.value),
       database = config.name.value
     )
 
@@ -26,7 +26,7 @@ object DbConnection:
       host = config.host.value,
       port = config.port.value,
       user = config.user.value,
-      password = Some(config.pass.value),
+      password = Some(config.pass.value.value),
       database = config.name.value,
       max = 10
     )

@@ -3,6 +3,7 @@ package com.github.olegbogaty.oradian.repo
 import cats.effect.*
 import cats.syntax.all.*
 import com.github.olegbogaty.oradian.data.domain.Account
+import scribe.Scribe
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
@@ -46,23 +47,27 @@ object AccountsRepo:
       WHERE account_id = $int4
     """.command
 
-  def makeResource[F[_]: Sync](
+  def makeResource[F[_]: Sync: Scribe](
     session: Session[F]
   ): Resource[F, AccountsRepo[F]] =
     Resource.eval:
       make(session)
 
-  def make[F[_]: Sync](session: Session[F]): F[AccountsRepo[F]] =
+  def make[F[_]: Sync: Scribe](session: Session[F]): F[AccountsRepo[F]] =
     Sync[F].delay:
       new AccountsRepo[F]:
         override def insert(account: Account): F[Unit] =
-          session.execute(insertOne)(account).void
+          Scribe[F].debug(s"insert account: $account") *>
+            session.execute(insertOne)(account).void
 
         override def select(id: Int): F[Option[Account]] =
-          session.option(selectOne)(id)
+          Scribe[F].debug(s"select account by id: $id") *>
+            session.option(selectOne)(id)
 
         override def update(account: Account): F[Unit] =
-          session.execute(updateOne)(account.balance, account.accountId).void
+          Scribe[F].debug(s"update account: $account") *>
+            session.execute(updateOne)(account.balance, account.accountId).void
 
         override def delete(account: Account): F[Unit] =
-          session.execute(deleteOne)(account.accountId).void
+          Scribe[F].debug(s"delete account: $account") *>
+            session.execute(deleteOne)(account.accountId).void

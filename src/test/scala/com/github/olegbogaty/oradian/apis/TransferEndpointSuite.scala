@@ -3,11 +3,11 @@ package com.github.olegbogaty.oradian.apis
 import cats.effect.kernel.Resource
 import cats.effect.std.Console
 import cats.effect.{Async, IO}
-import com.github.olegbogaty.oradian.apis.TransferEndpoint
 import com.github.olegbogaty.oradian.apis.model.{TransferErrorResponse, TransferRequest, TransferResponse, TransferStatusRequest}
 import com.github.olegbogaty.oradian.conf.Config
 import com.github.olegbogaty.oradian.data.domain.Account
 import com.github.olegbogaty.oradian.http.HttpServer
+import com.github.olegbogaty.oradian.logs.Log
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import com.github.olegbogaty.oradian.repo.{AccountRepoSuite, TransfersRepoSuite}
@@ -16,6 +16,7 @@ import io.circe
 import io.circe.generic.auto.*
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
+import scribe.Level
 import scribe.cats.given
 import sttp.client3.*
 import sttp.client3.circe.*
@@ -46,6 +47,7 @@ class TransferEndpointSuite extends CatsEffectSuite:
 
   def makeServer[F[_]: Async: Console]: Resource[F, HttpServer[F]] =
     for
+      _            <- Log.makeResource(Level.Warn)
       config       <- Config.makeResource
       accountRepo  <- AccountRepoSuite.testResource
       _            <- Resource.eval(accountRepo.insert(initialAccount))

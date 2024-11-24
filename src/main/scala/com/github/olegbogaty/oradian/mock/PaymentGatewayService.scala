@@ -4,6 +4,7 @@ import cats.effect.{Ref, Resource, Sync}
 import cats.syntax.all.*
 import com.github.olegbogaty.oradian.apis.model.{TransferErrorResponse, TransferResponse}
 import com.github.olegbogaty.oradian.data.domain.Transfer
+import scribe.Scribe
 
 // a mock service that encapsulates interaction with an external payment gateway
 trait PaymentGatewayService[F[_]]:
@@ -15,13 +16,13 @@ trait PaymentGatewayService[F[_]]:
   def checkTransferStatus(transactionReference: String): F[TransferResponse]
 
 object PaymentGatewayService:
-  def makeResource[F[_]: Sync](
+  def makeResource[F[_]: Sync: Scribe](
     strategy: PaymentGatewayServiceStrategy
   ): Resource[F, PaymentGatewayService[F]] =
     Resource.eval:
       make(strategy)
 
-  def make[F[_]: Sync](
+  def make[F[_]: Sync: Scribe](
     strategy: PaymentGatewayServiceStrategy
   ): F[PaymentGatewayService[F]] =
     for
@@ -29,11 +30,11 @@ object PaymentGatewayService:
       service <- make(strategy, state)
     yield service
 
-  private def make[F[_]: Sync](
+  private def make[F[_]: Sync: Scribe](
     strategy: PaymentGatewayServiceStrategy,
     state: Ref[F, Map[String, Transfer.Status]]
   ) =
-    scribe.cats[F].info(s"Strategy for payment gateway: $strategy") *>
+    Scribe[F].info(s"strategy for payment gateway: $strategy") *>
       Sync[F].delay:
         new PaymentGatewayService[F]:
           override def enterTransfer(
@@ -41,11 +42,13 @@ object PaymentGatewayService:
           ): F[Either[TransferErrorResponse, TransferResponse]] =
             strategy match
               case PaymentGatewayServiceStrategy.RejectTransfer =>
-                Left(TransferErrorResponse("transfer rejected")).pure[F]
+                Scribe[F].debug(s"transfer rejected: $transfer") >>
+                  Left(TransferErrorResponse("transfer rejected")).pure[F]
               case _ =>
-                state.update(
-                  _ + (transfer.transactionReference -> Transfer.Status.PENDING)
-                ) *>
+                Scribe[F].debug(s"transfer status: PENDING: $transfer") >>
+                  state.update(
+                    _ + (transfer.transactionReference -> Transfer.Status.PENDING)
+                  ) *>
                   Right(TransferResponse("transfer status: PENDING")).pure[F]
 
           override def checkTransferStatus(
