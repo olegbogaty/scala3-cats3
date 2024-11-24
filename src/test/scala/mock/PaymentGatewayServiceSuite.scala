@@ -64,8 +64,11 @@ class PaymentGatewayServiceSuite extends CatsEffectSuite:
       service <- PaymentGatewayService.make[IO](
         PaymentGatewayServiceStrategy.FailureTransfer
       )
-      result <- service.checkTransferStatus(sampleTransactionRef)
-    yield assertEquals(result, TransferResponse("FAILURE"))
+      pending <- service.enterTransfer(sampleTransfer)
+      failure <- service.checkTransferStatus(sampleTransactionRef)
+    yield
+      assertEquals(pending, Right(TransferResponse("transfer status: PENDING")))
+      assertEquals(failure, TransferResponse("FAILURE"))
 
   test("PendingThenSuccess should initially return PENDING and then SUCCESS"):
     for

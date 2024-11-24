@@ -16,7 +16,7 @@ import scala.concurrent.duration.*
 
 class TransferProcessingServiceSuite extends CatsEffectSuite:
 
-  private val testConfig   = TransferConfig.unsafeFrom(2, 2)
+  private val testConfig   = TransferConfig.unsafeFrom(1, 1) // to speedup test
   private val validAccount = Account(1234567890, 333, 500.0)
   private val validTransfer = Transfer(
     accountId = 1234567890,
@@ -106,7 +106,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
     for
       service <- makeService[IO](PaymentGatewayServiceStrategy.FailureTransfer)
       _       <- service.enterTransfer(validTransfer)
-      _       <- IO.sleep(4.seconds) // Wait for retries
+      _       <- IO.sleep(2.seconds) // Wait for retries
       status  <- service.checkTransferStatus(validTransfer.transactionReference)
       _ <- IO(
         assertEquals(
@@ -117,19 +117,19 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
       )
     yield ()
 
-  test("Transfer should stop after reaching tries limit"):
+  test("Transfer should fail after reaching tries limit"):
     for
       service <- makeService[IO](
         PaymentGatewayServiceStrategy.AlwaysPendingTransfer
       )
       _      <- service.enterTransfer(validTransfer)
-      _      <- IO.sleep(4.seconds) // Wait for retries to exhaust
+      _      <- IO.sleep(2.seconds) // Wait for retries to exhaust
       status <- service.checkTransferStatus(validTransfer.transactionReference)
       _ <- IO(
         assertEquals(
           status,
-          Some(Transfer.Status.PENDING), //
-          "Transfer should remain pending"
+          Some(Transfer.Status.FAILURE),
+          "Transfer should fail"
         )
       )
     yield ()

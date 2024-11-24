@@ -62,17 +62,7 @@ object TransferProcessingService:
             case Some(account) =>
               validateTransfer(account, transfer) match
                 case Right((account, transfer)) =>
-                  for
-                    gatewayResponse <- gatewayService.enterTransfer(transfer)
-                    result <- gatewayResponse match
-                      case Right(_) =>
-                        startTransferHandler(account, transfer) *>
-                          // "transfer accepted and pending"
-                          Right(transfer).pure[F]
-                      case Left(error) =>
-                        Left(TransferError(s"transfer failed: ${error.msg}"))
-                          .pure[F]
-                  yield result
+                  handleGatewayResponse(account, transfer)
                 case Left(error) => Left(error).pure[F]
             case None => Left(TransferError("Account not found")).pure[F]
         yield result
@@ -101,6 +91,20 @@ object TransferProcessingService:
           TransferError("transfer from and to same account is not allowed")
         )
         amount.flatMap(_ => sameAccount.map(identity))
+
+      private def handleGatewayResponse(account: Account, transfer: Transfer) =
+        for
+          gatewayResponse <- gatewayService.enterTransfer(transfer)
+          result <- gatewayResponse match
+            case Right(_) =>
+              startTransferHandler(account, transfer) *>
+                // transfer accepted and pending
+                Right(transfer).pure[F]
+            case Left(error) =>
+              // transfer rejected
+              Left(TransferError(s"transfer rejected: ${error.msg}"))
+                .pure[F]
+        yield result
 
       private def startTransferHandler(
         account: Account,
@@ -151,7 +155,10 @@ object TransferProcessingService:
         success: Boolean
       ): F[Unit] =
         for
-          _ <- activeHandlers.update(_ - transfer.transactionReference)
+          // cancel async transfer and remove from state
+          _ <- activeHandlers.update: map =>
+            map.get(transfer.transactionReference).foreach(_.cancel)
+            map - transfer.transactionReference
           _ <-
             if (!success)
               // rollback transfer in case of failure
