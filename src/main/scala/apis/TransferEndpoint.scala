@@ -37,7 +37,8 @@ object TransferEndpoint:
       .in("check-transfer-status")
       .in(
         jsonBody[TransferStatusRequest]
-          .example(TransferStatusRequest("unique transaction reference"))
+          .example:
+            TransferStatusRequest.example
       )
       .out(jsonBody[TransferResponse])
 

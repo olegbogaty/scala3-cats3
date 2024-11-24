@@ -100,7 +100,6 @@ class TransferEndpointSuite extends CatsEffectSuite:
         IO {
           assertEquals(res.code, StatusCode.BadRequest)
           assert(res.body.isLeft)
-          println(res.body.left.map(_.getMessage))
           assert(
             res.body.swap
               .map(

@@ -9,3 +9,10 @@ case class ConfigRequest(
   tries: Int,
   delay: Int // in seconds
 )
+
+object ConfigRequest:
+  private[apis] val example =
+    ConfigRequest(
+      2,
+      2
+    )

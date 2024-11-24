@@ -1,10 +1,9 @@
 package mock
 
 import apis.model.{TransferErrorResponse, TransferResponse}
-import cats.effect.{IO, Ref, Resource, Sync}
+import cats.effect.{Ref, Resource, Sync}
 import cats.syntax.all.*
 import data.domain.Transfer
-import mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 
 // a mock service that encapsulates interaction with an external payment gateway
 trait PaymentGatewayService[F[_]]:
@@ -34,38 +33,47 @@ object PaymentGatewayService:
     strategy: PaymentGatewayServiceStrategy,
     state: Ref[F, Map[String, Transfer.Status]]
   ) =
-    Sync[F].delay:
-      new PaymentGatewayService[F]:
-        override def enterTransfer(
-          transfer: Transfer
-        ): F[Either[TransferErrorResponse, TransferResponse]] =
-          strategy match
-            case PaymentGatewayServiceStrategy.RejectTransfer =>
-              Left(TransferErrorResponse("transfer rejected")).pure[F]
-            case _ =>
-              state.update(
-                _ + (transfer.transactionReference -> Transfer.Status.PENDING)
-              ) *>
-                Right(TransferResponse("transfer status: PENDING")).pure[F]
+    scribe.cats[F].info(s"Strategy for payment gateway: $strategy") *>
+      Sync[F].delay:
+        new PaymentGatewayService[F]:
+          override def enterTransfer(
+            transfer: Transfer
+          ): F[Either[TransferErrorResponse, TransferResponse]] =
+            strategy match
+              case PaymentGatewayServiceStrategy.RejectTransfer =>
+                Left(TransferErrorResponse("transfer rejected")).pure[F]
+              case _ =>
+                state.update(
+                  _ + (transfer.transactionReference -> Transfer.Status.PENDING)
+                ) *>
+                  Right(TransferResponse("transfer status: PENDING")).pure[F]
 
-        override def checkTransferStatus(
-          transactionReference: String
-        ): F[TransferResponse] =
-          strategy match
-            case PaymentGatewayServiceStrategy.SuccessTransfer =>
-              TransferResponse(Transfer.Status.SUCCESS.toString).pure[F]
-            case PaymentGatewayServiceStrategy.AlwaysPendingTransfer =>
-              TransferResponse(Transfer.Status.PENDING.toString).pure[F]
-            case PaymentGatewayServiceStrategy.FailureTransfer |
-                PaymentGatewayServiceStrategy.RejectTransfer =>
-              TransferResponse(Transfer.Status.FAILURE.toString).pure[F]
-            case PaymentGatewayServiceStrategy.PendingThenSuccess =>
-              state.get
-                .map(
-                  _.getOrElse(transactionReference, Transfer.Status.FAILURE)
-                )
-                .map(_ => TransferResponse(Transfer.Status.SUCCESS.toString)) <*
-                state.update(_ - transactionReference)
+          override def checkTransferStatus(
+            transactionReference: String
+          ): F[TransferResponse] =
+            strategy match
+              case PaymentGatewayServiceStrategy.SuccessTransfer =>
+                TransferResponse(Transfer.Status.SUCCESS.toString)
+                  .pure[F] <* state.update(_ - transactionReference)
+              case PaymentGatewayServiceStrategy.AlwaysPendingTransfer =>
+                TransferResponse(Transfer.Status.PENDING.toString)
+                  .pure[F] <* state.update(_ - transactionReference)
+              case PaymentGatewayServiceStrategy.FailureTransfer |
+                  PaymentGatewayServiceStrategy.RejectTransfer =>
+                TransferResponse(Transfer.Status.FAILURE.toString)
+                  .pure[F] <* state.update(_ - transactionReference)
+              case PaymentGatewayServiceStrategy.PendingThenSuccess =>
+                state.get
+                  .map:
+                    _.get(transactionReference)
+                      .map: _ =>
+                        TransferResponse(Transfer.Status.SUCCESS.toString)
+                      .getOrElse:
+                        // not a case
+                        TransferResponse(Transfer.Status.FAILURE.toString)
+                // format: off
+                <* state.update(_ - transactionReference)
+                // format: on
 
   trait PaymentGatewayServiceStrategy
 

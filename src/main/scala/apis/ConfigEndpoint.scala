@@ -24,10 +24,7 @@ object ConfigEndpoint:
       .in(
         jsonBody[ConfigRequest]
           .example:
-            ConfigRequest(
-              2,
-              2
-            )
+            ConfigRequest.example
       )
       .out(jsonBody[ConfigResponse])
       .errorOut(jsonBody[ConfigErrorResponse])
