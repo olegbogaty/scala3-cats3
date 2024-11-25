@@ -4,7 +4,10 @@ import cats.effect.*
 import cats.effect.implicits.*
 import cats.instances.all.*
 import cats.syntax.all.*
-import com.github.olegbogaty.oradian.apis.model.{TransferErrorResponse, TransferResponse}
+import com.github.olegbogaty.oradian.apis.model.{
+  TransferErrorResponse,
+  TransferResponse
+}
 import com.github.olegbogaty.oradian.data.domain.{Account, Transfer}
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService
 import com.github.olegbogaty.oradian.repo.TransfersRepo
@@ -58,14 +61,15 @@ object TransferProcessingService:
         transfer: Transfer
       ): F[Either[TransferError, Transfer]] =
         for
-          option <- accountService.lookup(transfer.accountId)
-          result <- option match
-            case Some(account) =>
-              validateTransfer(account, transfer) match
-                case Right((account, transfer)) =>
-                  handleGatewayResponse(account, transfer)
-                case Left(error) => Left(error).pure[F]
-            case None => Left(TransferError("account not found")).pure[F]
+          status <- checkTransferStatus(transfer.transactionReference)
+          result <- status match
+            case None => lookupAccountAndMakeTransfer(transfer)
+            case Some(status) =>
+              Left(
+                TransferError(
+                  s"transfer with transaction reference `${transfer.transactionReference}` already exists, status: $status"
+                )
+              ).pure[F]
         yield result
 
       override def checkTransferStatus(
@@ -76,6 +80,22 @@ object TransferProcessingService:
           result <- transfer.traverse: transfer =>
             transfer.status.pure[F]
         yield result
+
+      private def lookupAccountAndMakeTransfer(transfer: Transfer) =
+        for
+          option <- accountService.lookup(transfer.accountId)
+          result <- option match
+            case Some(account) =>
+              enterTransfer(account, transfer)
+            case None =>
+              Left(TransferError("account not found")).pure[F]
+        yield result
+
+      private def enterTransfer(account: Account, transfer: Transfer) =
+        validateTransfer(account, transfer) match
+          case Right((account, transfer)) =>
+            handleGatewayResponse(account, transfer)
+          case Left(error) => Left(error).pure[F]
 
       private def validateTransfer(
         account: Account,

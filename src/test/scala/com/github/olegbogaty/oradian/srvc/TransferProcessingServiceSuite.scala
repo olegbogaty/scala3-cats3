@@ -10,6 +10,7 @@ import com.github.olegbogaty.oradian.logs.Log
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService.PaymentGatewayServiceStrategy
 import com.github.olegbogaty.oradian.repo.{AccountRepoSuite, TransfersRepoSuite}
+import com.github.olegbogaty.oradian.srvc.model.TransferError
 import munit.CatsEffectSuite
 import munit.catseffect.IOFixture
 import scribe.Level
@@ -142,3 +143,39 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         )
       )
     yield ()
+
+  test(
+    "Transfer error for transfer with the same transaction reference, then success"
+  ):
+    for
+      service <- makeService[IO](
+        PaymentGatewayServiceStrategy.PendingThenSuccess
+      )
+      _ <- service.enterTransfer(validTransfer)
+      statusPending <- service.checkTransferStatus(
+        validTransfer.transactionReference
+      )
+      errorExists <- service.enterTransfer(validTransfer)
+      _           <- IO.sleep(2.seconds) // Wait for retries
+      statusSuccess <- service.checkTransferStatus(
+        validTransfer.transactionReference
+      )
+    yield
+      assertEquals(
+        statusPending,
+        Some(Transfer.Status.PENDING),
+        "Transfer pending"
+      )
+      assert(errorExists.isLeft)
+      assertEquals(
+        errorExists.left.get,
+        TransferError(
+          s"transfer with transaction reference `${validTransfer.transactionReference}` already exists, status: ${statusPending.get}"
+        ),
+        "Transfer already exists"
+      )
+      assertEquals(
+        statusSuccess,
+        Some(Transfer.Status.SUCCESS),
+        "Transfer success"
+      )
