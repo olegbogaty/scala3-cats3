@@ -64,7 +64,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
         PaymentGatewayServiceStrategy.AlwaysPendingTransfer
       )
       result <- service.enterTransfer(validTransfer)
-      _ <- IO(assert(result.isRight, "Transfer should be accepted and pending"))
+      _      <- IO(assert(result.isRight, "Transfer should be accepted and pending"))
       _ <- IO {
         assertEquals(
           result.toOption.get.status,

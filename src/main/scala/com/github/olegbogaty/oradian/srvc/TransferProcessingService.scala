@@ -4,10 +4,7 @@ import cats.effect.*
 import cats.effect.implicits.*
 import cats.instances.all.*
 import cats.syntax.all.*
-import com.github.olegbogaty.oradian.apis.model.{
-  TransferErrorResponse,
-  TransferResponse
-}
+import com.github.olegbogaty.oradian.apis.model.{TransferErrorResponse, TransferResponse}
 import com.github.olegbogaty.oradian.data.domain.{Account, Transfer}
 import com.github.olegbogaty.oradian.mock.PaymentGatewayService
 import com.github.olegbogaty.oradian.repo.TransfersRepo

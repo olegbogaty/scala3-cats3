@@ -32,8 +32,7 @@ object TransferEndpoint:
   import cats.data.ValidatedNel
   import cats.syntax.all.*
   // for tests with Swagger
-  private val checkTransferStatus
-    : Endpoint[Unit, TransferStatusRequest, Unit, TransferResponse, Any] =
+  private val checkTransferStatus: Endpoint[Unit, TransferStatusRequest, Unit, TransferResponse, Any] =
     endpoint.post
       .in("check-transfer-status")
       .in(

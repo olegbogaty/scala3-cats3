@@ -18,8 +18,7 @@ object ConfigEndpoint:
   //  /config-transfer
   //  An endpoint to manage the processing configuration of transfer requests,
   //  allowing adjustments of parameters like status check frequency and retry limits.
-  private val configTransfer
-    : PublicEndpoint[ConfigRequest, ConfigErrorResponse, ConfigResponse, Any] =
+  private val configTransfer: PublicEndpoint[ConfigRequest, ConfigErrorResponse, ConfigResponse, Any] =
     endpoint.post
       .in("config-transfer")
       .in(

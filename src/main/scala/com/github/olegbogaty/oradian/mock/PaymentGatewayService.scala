@@ -61,8 +61,7 @@ object PaymentGatewayService:
               case PaymentGatewayServiceStrategy.AlwaysPendingTransfer =>
                 TransferResponse(Transfer.Status.PENDING.toString)
                   .pure[F] <* state.update(_ - transactionReference)
-              case PaymentGatewayServiceStrategy.FailureTransfer |
-                  PaymentGatewayServiceStrategy.RejectTransfer =>
+              case PaymentGatewayServiceStrategy.FailureTransfer | PaymentGatewayServiceStrategy.RejectTransfer =>
                 TransferResponse(Transfer.Status.FAILURE.toString)
                   .pure[F] <* state.update(_ - transactionReference)
               case PaymentGatewayServiceStrategy.PendingThenSuccess =>
