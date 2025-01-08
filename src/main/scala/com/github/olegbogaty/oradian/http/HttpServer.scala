@@ -24,7 +24,7 @@ object HttpServer:
       handle <- Resource.eval:
         for
           _ <- Scribe[F].info:
-            s"Go to http://localhost:${config.port.value}/docs to open SwaggerUI"
+            s"Go to http://${config.host.value}:${config.port.value}/docs to open SwaggerUI"
           binding <- server.start()
         yield new HttpServer[F]:
           override def serve(): F[NettyCatsServerBinding[F]] = binding.pure[F]
