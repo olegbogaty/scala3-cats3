@@ -41,28 +41,24 @@ class ConfigSuite extends CatsEffectSuite:
 //    http {
 //      server {
 //        host = "localhost"
-//        host = ${ ? SERVER_HOST }
+//        host = ${ ? HTTP_SERVER_HOST }
 //        port = 8080
-//        port = ${ ? SERVER_PORT }
+//        port = ${ ? HTTP_SERVER_PORT }
 //      }
 //    }
 //  }
 
-  private val testEnv: Map[String, String] = Map.newBuilder
-    .addAll(
-      List(
-        "DATABASE_HOST"         -> "localhost",
-        "DATABASE_HOST"         -> "5454",
-        "DATABASE_USER"         -> "oradian",
-        "DATABASE_PASS"         -> "oradian",
-        "DATABASE_NAME"         -> "oradian",
-        "TRANSFER_CONFIG_TRIES" -> "10",
-        "TRANSFER_CONFIG_DELAY" -> "10",
-        "SERVER_HOST"           -> "localhost",
-        "SERVER_PORT"           -> "8080"
-      )
-    )
-    .result()
+  private val testEnv: Map[String, String] = Map(
+    "DATABASE_HOST"         -> "localhost",
+    "DATABASE_HOST"         -> "5454",
+    "DATABASE_USER"         -> "oradian",
+    "DATABASE_PASS"         -> "oradian",
+    "DATABASE_NAME"         -> "oradian",
+    "TRANSFER_CONFIG_TRIES" -> "10",
+    "TRANSFER_CONFIG_DELAY" -> "10",
+    "HTTP_SERVER_HOST"      -> "localhost",
+    "HTTP_SERVER_PORT"      -> "8080"
+  )
 
   test("load and compare app config"):
     ConfigSuite
