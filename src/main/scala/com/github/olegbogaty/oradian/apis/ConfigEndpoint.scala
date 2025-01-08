@@ -73,10 +73,10 @@ object ConfigEndpoint:
   ): F[Either[ConfigErrorResponse, TransferConfig]] =
     val tries: ValidatedNel[String, Int] =
       if (request.tries > 0) request.tries.validNel[String]
-      else "tries should be more then 0".invalidNel
+      else "tries should be more than 0".invalidNel
     val delay: ValidatedNel[String, Int] =
       if (request.delay > 0) request.tries.validNel[String]
-      else "delay should be more then 0".invalidNel
+      else "delay should be more than 0".invalidNel
     (tries, delay)
       .mapN((_, _) => TransferConfig.fromRequest(request))
       .toEither
