@@ -77,15 +77,5 @@ object PaymentGatewayService:
                 <* state.update(_ - transactionReference)
                 // format: on
 
-  trait PaymentGatewayServiceStrategy
-
-  object PaymentGatewayServiceStrategy:
-    case object RejectTransfer extends PaymentGatewayServiceStrategy
-
-    case object AlwaysPendingTransfer extends PaymentGatewayServiceStrategy
-
-    case object SuccessTransfer extends PaymentGatewayServiceStrategy
-
-    case object FailureTransfer extends PaymentGatewayServiceStrategy
-
-    case object PendingThenSuccess extends PaymentGatewayServiceStrategy
+  enum PaymentGatewayServiceStrategy:
+    case RejectTransfer, AlwaysPendingTransfer, SuccessTransfer, FailureTransfer, PendingThenSuccess
