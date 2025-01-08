@@ -2,7 +2,6 @@ package com.github.olegbogaty.oradian.srvc
 
 import cats.effect.*
 import cats.effect.implicits.*
-import cats.instances.all.*
 import cats.syntax.all.*
 import com.github.olegbogaty.oradian.apis.model.{TransferErrorResponse, TransferResponse}
 import com.github.olegbogaty.oradian.data.domain.{Account, Transfer}
@@ -74,8 +73,7 @@ object TransferProcessingService:
       ): F[Option[Transfer.Status]] =
         for
           transfer <- transfersRepo.select(transactionReference)
-          result <- transfer.traverse: transfer =>
-            transfer.status.pure[F]
+          result   <- transfer.map(_.status).pure[F]
         yield result
 
       private def lookupAccountAndMakeTransfer(transfer: Transfer) =
