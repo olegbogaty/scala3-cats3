@@ -4,13 +4,12 @@ import cats.effect.*
 import cats.syntax.all.*
 import com.github.olegbogaty.oradian.data.domain.Transfer
 import com.github.olegbogaty.oradian.data.domain.Transfer.Status
-import com.github.olegbogaty.oradian.data.domain.Transfer.Status.codec
+import com.github.olegbogaty.oradian.data.domain.Transfer.Status.status
+import com.github.olegbogaty.oradian.repo.codec.instant
 import scribe.Scribe
 import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
-
-import java.time.LocalDateTime
 
 trait TransfersRepo[F[_]]:
   def insert(transfer: Transfer): F[Unit]
@@ -29,7 +28,7 @@ object TransfersRepo:
         recipient_bank_code,
         transaction_reference,
         transfer_date
-      ) VALUES ($int4, $numeric, $codec, $int4, $int4, $varchar, $timestamp)
+      ) VALUES ($int4, $numeric, $status, $int4, $int4, $varchar, $instant)
       """.command
       .to[Transfer]
 
@@ -46,13 +45,13 @@ object TransfersRepo:
       FROM   transfers
       WHERE  transaction_reference = $varchar
       """
-      .query(int4 *: numeric *: codec *: int4 *: int4 *: varchar *: timestamp)
+      .query(int4 *: numeric *: status *: int4 *: int4 *: varchar *: instant)
       .to[Transfer]
 
   private val updateOne: Command[(Status, String)] =
     sql"""
       UPDATE transfers
-      SET    status = $codec
+      SET    status = $status
       WHERE  transaction_reference = $varchar
     """.command
 

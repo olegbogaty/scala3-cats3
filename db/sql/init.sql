@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS transfers (
     recipient_account INT NOT NULL,
     recipient_bank_code INT NOT NULL,
     transaction_reference VARCHAR UNIQUE NOT NULL,
-    transfer_date TIMESTAMP NOT NULL DEFAULT now (),
+    transfer_date TIMESTAMPTZ NOT NULL DEFAULT now (),
     CHECK(status in ('PENDING','SUCCESS','FAILURE'))
 );
 

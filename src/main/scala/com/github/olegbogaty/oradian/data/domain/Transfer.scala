@@ -5,7 +5,7 @@ import com.github.olegbogaty.oradian.data.domain.Transfer.Status
 import io.scalaland.chimney.dsl.*
 import skunk.Codec
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 case class Transfer(
   accountId: Int,
@@ -14,7 +14,7 @@ case class Transfer(
   recipientAccount: Int,
   recipientBankCode: Int,
   transactionReference: String,
-  transferDate: LocalDateTime
+  transferDate: Instant
 )
 
 object Transfer:
@@ -22,7 +22,7 @@ object Transfer:
     request
       .into[Transfer]
       .withFieldRenamed(_.senderAccount, _.accountId)
-      .withFieldConst(_.transferDate, LocalDateTime.now)
+      .withFieldConst(_.transferDate, Instant.now)
       .withFieldConst(_.status, Status.PENDING)
       .transform
 
@@ -30,7 +30,7 @@ object Transfer:
     case PENDING, SUCCESS, FAILURE
 
   object Status:
-    given codec: Codec[Status] =
+    val status: Codec[Status] =
       Codec.simple(_.toString, Status.fromString, skunk.data.Type.varchar)
 
     private def fromString(status: String): Either[String, Status] =
