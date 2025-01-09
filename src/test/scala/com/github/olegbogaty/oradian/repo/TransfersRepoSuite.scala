@@ -6,7 +6,7 @@ import com.github.olegbogaty.oradian.data.domain.Transfer
 import com.github.olegbogaty.oradian.repo.TransfersRepoSuite.testTransfer
 import munit.CatsEffectSuite
 
-import java.time.LocalDateTime
+import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
 class TransfersRepoSuite extends CatsEffectSuite:
@@ -25,7 +25,7 @@ class TransfersRepoSuite extends CatsEffectSuite:
         recipientAccount = 3,
         recipientBankCode = 4,
         transactionReference = "newTransaction",
-        transferDate = LocalDateTime.now
+        transferDate = Instant.now
       )
       for
         _         <- repo.insert(newTransfer)
@@ -79,7 +79,7 @@ object TransfersRepoSuite:
     2, // recipientAccount
     3, // recipientBankCode
     "test-transaction-ref",
-    LocalDateTime.now
+    Instant.now
   )
 
   def testResource[F[_]: Sync]: Resource[F, TransfersRepo[F]] =

@@ -16,7 +16,7 @@ import munit.catseffect.IOFixture
 import scribe.Level
 import scribe.cats.given
 
-import java.time.LocalDateTime
+import java.time.Instant
 import scala.concurrent.duration.*
 
 class TransferProcessingServiceSuite extends CatsEffectSuite:
@@ -33,7 +33,7 @@ class TransferProcessingServiceSuite extends CatsEffectSuite:
     amount = 100.0,
     transactionReference = "txn-001",
     status = Transfer.Status.PENDING,
-    transferDate = LocalDateTime.now
+    transferDate = Instant.now
   )
 
   override def munitFixtures: Seq[IOFixture[Unit]] = List(logLevel)
