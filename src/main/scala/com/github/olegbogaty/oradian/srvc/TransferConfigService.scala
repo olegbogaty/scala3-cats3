@@ -30,11 +30,6 @@ object TransferConfigService:
       service <- make(config)
     yield service
 
-  def makeResource[F[_]: Sync: Scribe](
-    init: Ref[F, TransferConfig]
-  ): Resource[F, TransferConfigService[F]] =
-    Resource.eval(make(init))
-
   def make[F[_]: Sync: Scribe](
     init: Ref[F, TransferConfig]
   ): F[TransferConfigService[F]] =
@@ -46,3 +41,8 @@ object TransferConfigService:
         override def get: F[TransferConfig] =
           init.get.flatTap: tc =>
             Scribe[F].debug(s"current transfer config: $tc")
+
+  def makeResource[F[_]: Sync: Scribe](
+    init: Ref[F, TransferConfig]
+  ): Resource[F, TransferConfigService[F]] =
+    Resource.eval(make(init))
