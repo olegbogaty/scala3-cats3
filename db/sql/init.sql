@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS transfers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    account_id INT NOT NULL,
+    account_id INT NOT NULL REFERENCES accounts(account_id),
     amount NUMERIC NOT NULL,
     status VARCHAR NOT NULL,
     recipient_account INT NOT NULL,
