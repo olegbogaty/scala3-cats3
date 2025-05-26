@@ -1,4 +1,4 @@
-# oradian
+# cats3-scala-3
 test task
 
 # prerequisites
