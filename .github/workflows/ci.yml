@@ -1,4 +1,4 @@
-name: oradian CI
+name: scala3-cats3
 
 on:
   push:
