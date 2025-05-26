@@ -1,0 +1,93 @@
+package com.github.olegbogaty.oradian.repo
+
+import cats.effect.*
+import cats.syntax.all.*
+import com.github.olegbogaty.oradian.data.domain.Transfer
+import com.github.olegbogaty.oradian.data.domain.Transfer.Status
+import com.github.olegbogaty.oradian.data.domain.Transfer.Status.status
+import com.github.olegbogaty.oradian.repo.codec.instant
+import scribe.Scribe
+import skunk.*
+import skunk.codec.all.*
+import skunk.implicits.*
+
+trait TransfersRepo[F[_]]:
+  def insert(transfer: Transfer): F[Unit]
+  def select(transactionReference: String): F[Option[Transfer]]
+  def update(transfer: Transfer): F[Unit]
+  def delete(transfer: Transfer): F[Unit]
+
+object TransfersRepo:
+  private val insertOne: Command[Transfer] =
+    sql"""
+      INSERT INTO transfers (
+        account_id,
+        amount,
+        status,
+        recipient_account,
+        recipient_bank_code,
+        transaction_reference,
+        transfer_date
+      ) VALUES ($int4, $numeric, $status, $int4, $int4, $varchar, $instant)
+      """.command
+      .to[Transfer]
+
+  private val selectOne: Query[String, Transfer] =
+    sql"""
+      SELECT
+        account_id,
+        amount,
+        status,
+        recipient_account,
+        recipient_bank_code,
+        transaction_reference,
+        transfer_date
+      FROM   transfers
+      WHERE  transaction_reference = $varchar
+      """
+      .query(int4 *: numeric *: status *: int4 *: int4 *: varchar *: instant)
+      .to[Transfer]
+
+  private val updateOne: Command[(Status, String)] =
+    sql"""
+      UPDATE transfers
+      SET    status = $status
+      WHERE  transaction_reference = $varchar
+    """.command
+
+  private val deleteOne: Command[String] =
+    sql"""
+      DELETE FROM transfers
+      WHERE transaction_reference = $varchar
+    """.command
+
+  def makeResource[F[_]: Sync: Scribe](
+    session: Session[F]
+  ): Resource[F, TransfersRepo[F]] =
+    Resource.eval(make(session))
+
+  def make[F[_]: Sync: Scribe](session: Session[F]): F[TransfersRepo[F]] =
+    Sync[F].delay:
+      new TransfersRepo[F]:
+        override def insert(transfer: Transfer): F[Unit] =
+          Scribe[F].debug(s"insert transfer: $transfer") *>
+            session.execute(insertOne)(transfer).void
+
+        override def select(transactionReference: String): F[Option[Transfer]] =
+          Scribe[F].debug(
+            s"select transfer by transfer reference: $transactionReference"
+          ) *>
+            session.option(selectOne)(transactionReference)
+
+        override def update(transfer: Transfer): F[Unit] =
+          Scribe[F].debug(s"update transfer: $transfer") *>
+            session
+              .execute(updateOne)(
+                transfer.status,
+                transfer.transactionReference
+              )
+              .void
+
+        override def delete(transfer: Transfer): F[Unit] =
+          Scribe[F].debug(s"delete transfer: $transfer") *>
+            session.execute(deleteOne)(transfer.transactionReference).void
