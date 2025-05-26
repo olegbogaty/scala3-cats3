@@ -1,4 +1,4 @@
-# cats3-scala-3
+# scala3-cats3
 test task
 
 # prerequisites
