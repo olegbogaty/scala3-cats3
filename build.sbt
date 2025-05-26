@@ -9,7 +9,7 @@ lazy val root = project
   .in(file("."))
   .settings(
     Compile / run / fork := true,
-    name         := "oradian",
+    name         := "scala3-cats3",
     version      := "0.1.0-SNAPSHOT",
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
